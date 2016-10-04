@@ -2,7 +2,7 @@
 title: "exploration"
 author: "Andrea Julca"
 date: "9/14/2016"
-output: pdf_document
+output: html_document
 ---
 
 ```{r setup, include=FALSE}
@@ -117,16 +117,31 @@ We'll just suppress this section.
 library(shiny)
 library(leaflet)
 library(RColorBrewer)
-library(rgdal)
+library(rgdal) 
+library(geosphere) #for curved lines
+library(mapview) # for multilines
+library(raster) # for multilines
 
-#Just use tempfile for now
-download.file(file.path('http://www.naturalearthdata.com/http/',
-                        'www.naturalearthdata.com/download/50m/cultural',
-                        'ne_50m_admin_0_countries.zip'), 
-              f <- tempfile())
-unzip(f, exdir=tempdir())
+shapePath <- paste0(.libPaths()[1], '/fishTrade/data/worldOGR/')
+rm(world)
 
-world <- readOGR(tempdir(), 'ne_50m_admin_0_countries', encoding='UTF-8')
+tryCatch({
+  world <- readOGR(shapePath, 'ne_50m_admin_0_countries', encoding='UTF-8')}, 
+  error = function(e){
+  dir.create(shapePath, showWarnings = FALSE, recursive = TRUE)
+  
+  download.file(file.path('http://www.naturalearthdata.com/http/',
+                          'www.naturalearthdata.com/download/50m/cultural',
+                          'ne_50m_admin_0_countries.zip'), 
+                f <- tempfile())
+  unzip(f, exdir=shapePath)
+  
+}, 
+finally = {
+  if(!exists('world')){
+    world <- readOGR(shapePath, 'ne_50m_admin_0_countries', encoding='UTF-8')
+  }
+})
 
 commonwealth <- cNames[, Area_Name]
 
@@ -141,17 +156,51 @@ r_colors <- rgb(t(col2rgb(colors()) / 255))
 names(r_colors) <- colors()
 
 
-#Plotting curved trade paths in leaflet
+#Plotting curved trade paths in leaflet (geosphere)
 
-library(geosphere)
-gcIntermediate(c(5,52), c(-120,37),
-               n=100, 
+inter <- gcIntermediate(c(5,52), c(-120,37),
+               n=30, 
                addStartEnd=TRUE,
-               sp=TRUE) %>% 
+               sp=FALSE)
+inter2 <- gcIntermediate(c(100,52), c(120,37),
+               n=50, 
+               addStartEnd=TRUE,
+               sp=FALSE)
+
+testDT  <- as.matrix(rbindlist(list(as.data.table(inter), as.data.table(list('lon' = NA, 'lat' = NA)), as.data.table(inter2)), use.names = T))
+
+testDT %>% 
 leaflet() %>% 
 addTiles() %>% 
-addPolylines()
+addPolylines(weight = 1)
 
+#based on http://stackoverflow.com/questions/31311063/how-to-add-polylines-from-one-location-to-others-separately-using-leaflet-in-shi 
+
+root <- matrix(c(-197.0563, -8.4171), ncol = 2)
+colnames(root) <- c('Long', 'Lat')
+locations <- data.frame(Long = 15:20, Lat = c(10, 40, 120, -15, 80))
+  
+lst <- lapply(1:nrow(locations), function(i) {
+  SpatialLines(list(Lines(list(Line(rbind(root, locations[i, ]))), ID = i)), 
+               proj4string = CRS("+init=epsg:4326"))
+})
+
+sln <- do.call("bind", lst)
+
+mapview(sln)
+#leaflet() %>% 
+#addTiles() %>% 
+#addPolylines(
+#  lng = c(testDT[1, lon],testDT[32, lon]), 
+#  lat = c(testDT[1, lat],testDT[32, lat]), 
+#  weight = 1)
+
+#lines(inter)
+#lines(inter2)
+
+
+#lines(inter)
+#lines(inter2)
 ```
 
 ## leaflet with shiny
