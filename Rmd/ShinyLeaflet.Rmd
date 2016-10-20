@@ -1,0 +1,170 @@
+---
+title: "ShinyLeaflet"
+author: "Andrea Julca"
+date: "10/18/2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(data.table)
+library(leaflet)
+library(sp)
+library(shiny)
+library(RColorBrewer)
+library(rgdal) 
+library(mapview) # for multilines
+library(raster) # for multilines
+library(geosphere) #for curved lines
+library(foreach)
+```
+
+```{r fish}
+#Copy sample dataset
+#dPath <- '/nfs/jgephart-data/Species Network/'
+#file.copy(paste0(dPath, 'species_trade_2010_2011.txt'), '/research-home/ajulca/data/species_trade.txt', overwrite = FALSE)
+#file.copy(paste0(dPath, 'Country_Codes_Names.txt'), '/research-home/ajulca/data/Country_Codes_Names.txt', overwrite = TRUE)
+
+#Get shapefile
+#download.file('http://thematicmapping.org/downloads/TM_WORLD_BORDERS-0.3.zip', '/research-home/ajulca/data/World_Borders.zip')
+#unzip('/research-home/ajulca/data/World_Borders.zip', exdir = '/research-home/ajulca/data/')
+
+dPath <- '/research-home/ajulca/data/'
+
+##data.table fread not the best here; just use base read.table
+#cNames <- fread(paste0(dPath, 'Country_Codes_Names.txt'), col.names = c('rNo', 'ISO_Code', 'Area_Name', 'ISO_Alpha'))
+#sTrade <- fread(paste0(dPath, 'species_trade.txt'), col.names = c('rNo', 'Import', 'Export', 'Species', 'value', 'Year'), skip = 1)
+cNames <- data.table(read.table(paste0(dPath, 'Country_Codes_Names.txt')))
+sTrade <- data.table(read.table(paste0(dPath, 'species_trade.txt')))
+setkey(cNames, key = ISO_Code)
+setkey(sTrade, key = Import)
+
+impDT <- cNames[sTrade]
+
+setkey(impDT, key = Export)
+
+wDT <- cNames[impDT][, .(ISO_Code, Area_Name, ISO_Alpha, Exp_Code = i.ISO_Code, Exp_Name = i.Area_Name, Exp_Alpha = i.ISO_Alpha, Species, value, Year)]
+
+#I know Japan is a net importer of fish; let's check to make sure colnames mean what we think they mean
+sum(unique(wDT[Area_Name == 'Japan', value]))
+  
+wDT[Year == 2010 & Area_Name == 'Japan' & Species == 'a']
+
+```
+
+## leaflet and sp
+```{r leaflet}
+#Based on https://rstudio.github.io/leaflet/colors.html and https://rstudio.github.io/leaflet/shiny.html and http://stackoverflow.com/questions/29118059/display-spatialpolygonsdataframe-on-leaflet-map-with-r
+
+try(rm(world), silent = TRUE)
+
+shapePath <- paste0(.libPaths()[1], '/fishTrade/data/worldOGR/')
+
+tryCatch({
+  world <- readOGR(shapePath, 'ne_50m_admin_0_countries', encoding='UTF-8')
+  }, 
+  error = function(e){
+  dir.create(shapePath, showWarnings = FALSE, recursive = TRUE)
+  
+  download.file(file.path('http://www.naturalearthdata.com/http/',
+                          'www.naturalearthdata.com/download/50m/cultural',
+                          'ne_50m_admin_0_countries.zip'), 
+                f <- tempfile())
+  unzip(f, exdir=shapePath)
+  
+}, 
+finally = {
+  if(!exists('world')){
+    world <- readOGR(shapePath, 'ne_50m_admin_0_countries', encoding='UTF-8')
+  }
+})
+
+
+testSP <- spTransform(world, CRS("+proj=longlat +datum=WGS84"))
+mapview(testSP)
+
+#maybe the approach we want to use is to reshape2 as VERY WIDE data
+reshpDT <- data.table::dcast(wDT[,.(Year, Species, ISO_Alpha, Exp_Alpha, value)],  ISO_Alpha ~ Year + Species + Exp_Alpha, value.var = "value")
+
+worldData <- merge(world, reshpDT, by.x = "iso_a3", by.y = "ISO_Alpha")
+
+wdSP <- spTransform(worldData, CRS("+proj=longlat +datum=WGS84"))
+mapview(wdSP)
+
+
+worldDT  <- data.table(world@data)
+wCoord <- coordinates(world)
+colnames(wCoord) <- c('Long', 'Lat')
+
+worldDT <- data.table(cbind(world@data, wCoord))
+
+setkey(worldDT, key = iso_a3)
+setkey(wDT, key = ISO_Alpha)
+
+spDT <- wDT[worldDT][!is.na(Species)] 
+setkey(spDT, key = Exp_Alpha)
+
+mapDT <- spDT[worldDT][!is.na(Species), ]
+setkey(mapDT, key = ISO_Alpha, Exp_Alpha)
+#Create line-generating code as string; to computationally costly to do all at once
+#Also note - dateline causes weirdness with gcIntermediate (eastern side of line doesn't render), so
+#as a workaround, we draw straight lines when the diff in longitude is >= 180 degrees
+
+mapDT[,
+  spLine := ifelse(abs(i.Long - Long) < 180, 
+    paste0('gcIntermediate(c(', 
+      Long, ',', 
+      Lat, '), c(',
+      i.Long, ',', 
+      i.Lat, '), sp = TRUE, addStartEnd=TRUE, breakAtDateLine=TRUE)'
+    ), 
+    paste0('SpatialLines(list(Lines(list(Line(rbind(c(', 
+      Long, ',', 
+      Lat, '), c(',
+      i.Long, ',', 
+      i.Lat, ')))), ID = "', 
+      Exp_Alpha, '")),proj4string = CRS("+init=epsg:4326"))'
+    )  
+  )
+]
+
+parser <- function(thisStr){
+  y <- eval(parse(text = thisStr))
+  return(y)  
+}
+
+#Actually, we want our lst to change on click, with polytile erasing lines (cleaner look); for now, use example of Japan
+thisISO <- 'JPN'
+
+#spLines <- mapDT[, spLine]
+spLines <- mapDT[ISO_Alpha == thisISO | Exp_Alpha == thisISO]
+
+lst <- foreach(i = 1:length(spLines)) %do% parser(spLines[i])
+#lst <- foreach(i = 1:300) %do% parser(spLines[i])
+
+sln <- do.call("bind", lst)
+
+mapview(sln)
+
+#Mapview is nice, but we can also do this with leaflet - which is more compatible with shiny
+#leaflet() %>% addTiles() %>% 
+leaflet() %>% addProviderTiles('CartoDB.Positron') %>% 
+#leaflet() %>% addProviderTiles('Stamen.Toner') %>% 
+#leaflet() %>% addProviderTiles('Esri.WorldTopoMap') %>% 
+  addPolygons(data=subset(world, iso_a3 %in% wDT[, ISO_Alpha]), weight=0.5) %>% 
+# addPolygons(data=subset(world, !(iso_a3 %in% wDT[, ISO_Alpha]), weight=2))
+addPolylines(data=sln, weight=1, color = "red")
+
+
+
+#
+
+
+```
+
+
+#Integrate with Shiny
+
+```{r shiny}
+#...Can be done in R script
+```

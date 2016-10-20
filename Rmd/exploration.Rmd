@@ -18,6 +18,8 @@ library(maps)
 library(geosphere)
 library(shiny)
 library(leaflet)
+library(sp)
+#library(reshape2)
 ```
 
 ## Get species data and country codes
@@ -43,7 +45,12 @@ sTrade <- data.table(read.table(paste0(dPath, 'species_trade.txt')))
 setkey(cNames, key = ISO_Code)
 setkey(sTrade, key = Import)
 
-wDT <- cNames[sTrade]
+impDT <- cNames[sTrade]
+
+setkey(impDT, key = Export)
+
+wDT <- cNames[impDT][, .(ISO_Code, Area_Name, ISO_Alpha, Exp_Code = i.ISO_Code, Exp_Name = i.Area_Name, Exp_Alpha = i.ISO_Alpha, Species, value, Year)]
+
 #I know Japan is a net importer of fish; let's check to make sure colnames mean what we think they mean
 sum(unique(wDT[Area_Name == 'Japan', value]))
   
@@ -111,7 +118,7 @@ We'll just suppress this section.
 #points(visit.x,visit.y, col="red", pch=16)
 ```
 
-## leaflet
+## leaflet and sp
 ```{r leaflet}
 #Based on https://rstudio.github.io/leaflet/colors.html and https://rstudio.github.io/leaflet/shiny.html and http://stackoverflow.com/questions/29118059/display-spatialpolygonsdataframe-on-leaflet-map-with-r
 library(shiny)
@@ -121,12 +128,14 @@ library(rgdal)
 library(geosphere) #for curved lines
 library(mapview) # for multilines
 library(raster) # for multilines
+library(foreach)
 
 shapePath <- paste0(.libPaths()[1], '/fishTrade/data/worldOGR/')
 rm(world)
 
 tryCatch({
-  world <- readOGR(shapePath, 'ne_50m_admin_0_countries', encoding='UTF-8')}, 
+  world <- readOGR(shapePath, 'ne_50m_admin_0_countries', encoding='UTF-8')
+  }, 
   error = function(e){
   dir.create(shapePath, showWarnings = FALSE, recursive = TRUE)
   
@@ -143,14 +152,27 @@ finally = {
   }
 })
 
-commonwealth <- cNames[, Area_Name]
 
 leaflet() %>% addTiles() %>% 
-  addPolygons(data=subset(world, name %in% commonwealth), weight=2)
+ addPolygons(data=subset(world, iso_a3 %in% wDT[, ISO_Alpha]), weight=2) %>% 
+ addPolygons(data=subset(world, !(iso_a3 %in% wDT[, ISO_Alpha]), weight=2))
 
+testSP <- spTransform(world, CRS("+proj=longlat +datum=WGS84"))
+mapview(testSP)
+
+#maybe the approach we want to use is to reshape2 as VERY WIDE data
+reshpDT <- data.table::dcast(wDT[,.(Year, Species, ISO_Alpha, Exp_Alpha, value)], Year+Species+Exp_Alpha ~ ISO_Alpha, value.var = "value")
+
+reshpDT[,rowID := paste0(Exp_Alpha, Year, Species, collapse = "_")]
+
+worldData <- merge(world, reshpDT, by.x = "iso_a3", by.y = "ISO_Alpha")
+
+wdSP <- spTransform(worldData, CRS("+proj=longlat +datum=WGS84"))
+mapview(wdSP)
+leaflet(wdSP)
 # From http://data.okfn.org/data/datasets/geo-boundaries-world-110m
-countries <- readOGR("json/countries.geojson", "OGRGeoJSON")
-map <- leaflet(countries)
+#countries <- readOGR("json/countries.geojson", "OGRGeoJSON")
+#map <- leaflet(countries)
 
 r_colors <- rgb(t(col2rgb(colors()) / 255))
 names(r_colors) <- colors()
@@ -167,26 +189,100 @@ inter2 <- gcIntermediate(c(100,52), c(120,37),
                addStartEnd=TRUE,
                sp=FALSE)
 
-testDT  <- as.matrix(rbindlist(list(as.data.table(inter), as.data.table(list('lon' = NA, 'lat' = NA)), as.data.table(inter2)), use.names = T))
+#testDT  <- as.matrix(rbindlist(list(as.data.table(inter), as.data.table(list('lon' = NA, 'lat' = NA)), as.data.table(inter2)), use.names = T))
 
-testDT %>% 
+#Can't merge bc it's not a unique list of countries...
+#worldData <- merge(world, wDT, by.x = "iso_a3", by.y = "ISO_Alpha")
+
+worldDT  <- data.table(world@data)
+wCoord <- coordinates(world)
+colnames(wCoord) <- c('Long', 'Lat')
+
+worldDT <- data.table(cbind(world@data, wCoord))
+
+setkey(worldDT, key = iso_a3)
+setkey(wDT, key = ISO_Alpha)
+
+spDT <- wDT[worldDT][!is.na(Species)] 
+setkey(spDT, key = Exp_Alpha)
+
+mapDT <- spDT[worldDT][!is.na(Species), .()]
+setkey(mapDT, key = ISO_Alpha, Exp_Alpha)
+
+mapDT[,
+  spLine := 
+    paste0('SpatialLines(list(Lines(list(Line(rbind(c(', 
+      Long, ',', 
+      Lat, '), c(',
+      i.Long, ',', 
+      i.Lat, ')))), ID = ', 
+      .I, ')),proj4string = CRS("+init=epsg:4326"))'
+    )  
+]
+
+parser <- function(thisStr){
+  y <- eval(parse(text = thisStr))
+  return(y)  
+}
+
+
+library(foreach)
+
+#Actually, we want our lst to change on click, with polytile erasing lines (cleaner look); for now, use example of JPN
+thisISO <- 'JPN'
+
+#spLines <- mapDT[, spLine]
+spLines <- mapDT[ISO_Alpha == thisISO | Exp_Alpha == thisISO]
+
+lst <- foreach(i = 1:length(spLines)) %do% parser(spLines[i])
+#lst <- foreach(i = 1:300) %do% parser(spLines[i])
+
+
+
+#
+#lst <- lapply(1:length(spLines), function(i){
+#  fullStr <- paste0(spLines[i], )
+#  y <- eval(parse(text = fullStr))
+#  return(y)
+#})
+
+
+#in this instance, we look at species a to JPN for 2011... this doesn't really work tho
+#world@data$value <- wDT[worldDT][(Year == max(wDT[, Year])) | is.na(Year)][ISO_Alpha == 'JPN' | is.na(Export)][(Species == 'a') | is.na(Species), value]
+#testDT <- as.data.frame(wDT[worldDT][!is.na(Species)])
+
+#use merge method as in https://stat.ethz.ch/pipermail/r-sig-geo/2008-January/003052.html
+#combined <- merge(x=world@data, y=wDT, by.x='iso_a3', by.y='ISO_Alpha')
+#world@data <- combined
+
+#testDT %>% 
+#wDT[worldDT] %>%
 leaflet() %>% 
 addTiles() %>% 
-addPolylines(weight = 1)
+#addPolylines(weight = 1) %>% 
+addPolygons(data=subset(world, iso_a3 %in% wDT[, ISO_Alpha]), weight=subset(world, iso_a3 %in% wDT[, ISO_Alpha])@data['value'])
+
+  #addPolygons(data=subset(world, ISO_Alpha %in% wDT[, ISO_Alpha]), weight=subset(world, iso_a3 %in% wDT[, ISO_Alpha])@data['mapcolor7'])
 
 #based on http://stackoverflow.com/questions/31311063/how-to-add-polylines-from-one-location-to-others-separately-using-leaflet-in-shi 
 
 root <- matrix(c(-197.0563, -8.4171), ncol = 2)
 colnames(root) <- c('Long', 'Lat')
-locations <- data.frame(Long = 15:20, Lat = c(10, 40, 120, -15, 80))
-  
-lst <- lapply(1:nrow(locations), function(i) {
-  SpatialLines(list(Lines(list(Line(rbind(root, locations[i, ]))), ID = i)), 
-               proj4string = CRS("+init=epsg:4326"))
-})
+#locations <- data.frame(Long = 15:20, Lat = c(10, 40, 120, -15, 80))
+
+locations <- coordinates(world)
+colnames(locations) <- c('Long', 'Lat')
+
+
+
+#lst <- lapply(1:nrow(locations), function(i) {
+#  SpatialLines(list(Lines(list(Line(rbind(root, locations[i, ]))), ID = i)), 
+#               proj4string = CRS("+init=epsg:4326"))
+#})
 
 sln <- do.call("bind", lst)
 
+mapview(lst[[1]])
 mapview(sln)
 #leaflet() %>% 
 #addTiles() %>% 
@@ -201,6 +297,12 @@ mapview(sln)
 
 #lines(inter)
 #lines(inter2)
+
+#...or we could trick it using greatCircle
+#mapDT[ISO_Alpha == thisISO, 
+trickPoints <- SpatialPoints(mapDT[,data.frame(c(Lat, Long), c(i.Lat, i.Long))])
+
+
 ```
 
 ## leaflet with shiny
