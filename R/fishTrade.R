@@ -38,7 +38,7 @@ fishTrade <-function(userDT, world){
               Long, ',', 
               Lat, '), c(',
               i.Long, ',', 
-              i.Lat, '), sp = TRUE, addStartEnd=TRUE, breakAtDateLine=TRUE)'
+              i.Lat, '), n = 50, sp = TRUE, addStartEnd=TRUE, breakAtDateLine=TRUE)'
        ), 
        paste0('SpatialLines(list(Lines(list(Line(rbind(c(', 
               Long, ',', 
