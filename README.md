@@ -6,6 +6,7 @@ Because this is currently a private repository, installation has an extra step o
 
 1. [Generate a SESYNC GitLab token](https://gitlab.sesync.org/profile/personal_access_tokens)
 2. Run the code:
+
 ```{r install} 
 #Install packages if needed
 install.packages(c('devtools', 'httr'));
