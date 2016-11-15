@@ -24,9 +24,9 @@ devtools::install_github(
 ) 
 
 library(fishRmap)
-
 ```
 
+```{r use}
 ## fishRmap - probably won't work for anyone else at this point; still in development
 fishRmap([either a 'String path to your data', or a data.frame])
 ```
