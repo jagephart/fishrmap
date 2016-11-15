@@ -15,11 +15,22 @@ joinFishWorld <- function(userDT, world){
   requireNamespace('raster', quietly = TRUE)
   requireNamespace('data.table', quietly = TRUE)
   
+  
+##Previous method split for each country... may be unnecessary, should just aggregate 
+#  reshpDT <- data.table::dcast(
+#    userDT[,.(Year, Species, ISO_Alpha, Exp_Alpha, value)],  
+#    ISO_Alpha ~ Year + Species + Exp_Alpha, 
+#    value.var = "value"
+#  )
+  
+  aggDT <- userDT[,.(TotVal = sum(value)), by=c('ISO_Alpha', 'Species', 'Year')]
+  
   reshpDT <- data.table::dcast(
-    userDT[,.(Year, Species, ISO_Alpha, Exp_Alpha, value)],  
-    ISO_Alpha ~ Year + Species + Exp_Alpha, 
-    value.var = "value"
+    aggDT[,.(Year, Species, ISO_Alpha, TotVal)],  
+    ISO_Alpha ~ Year + Species, 
+    value.var = "TotVal"
   )
+  
   
   worldData <- raster::merge(world, reshpDT, by.x = "iso_a3", by.y = "ISO_Alpha")
 

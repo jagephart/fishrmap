@@ -40,6 +40,27 @@ fishRmap <- function(userdata){
   palExp <- colorRampPalette(c("white", "black"))
   colorExp <- palExp(100)
   
+  
+  #Create border widths -- WILL WANT TO USE species$selected & year$selected LATER!
+#  borderWidths <- 100*max(subset(world, iso_a3 %in% userDT[, ISO_Alpha])@data$gdp_md_est)*
+#    (subset(world, iso_a3 %in% userDT[, ISO_Alpha])@data[
+#      '2011_a'
+##      c(paste0(year$selected, '_', species$selected))
+#      ]/
+#       max(subset(world, iso_a3 %in% userDT[, ISO_Alpha])@data[
+#         '2011_a'
+##         c(paste0(year$selected, '_', species$selected))
+#         ]))/
+#    subset(world, iso_a3 %in% userDT[, ISO_Alpha])@data$gdp_md_est
+  
+  borderWidths <- 4*(1+scale(subset(world, iso_a3 %in% userDT[, ISO_Alpha])@data[
+      '2011_a'
+  #      c(paste0(year$selected, '_', species$selected))
+      ]/subset(world, iso_a3 %in% userDT[, ISO_Alpha])@data$gdp_md_est))
+#       ]/subset(world, iso_a3 %in% userDT[, ISO_Alpha])@data$pop_est))
+
+
+    
   #a few other options for map style - make it user pref selection?
   #leaflet() %>% addProviderTiles('Stamen.Toner') %>% 
   #leaflet() %>% addProviderTiles('Esri.WorldTopoMap') %>% 
@@ -91,7 +112,11 @@ fishRmap <- function(userdata){
       # won't need to change dynamically (at least, not unless the
       # entire map is being torn down and recreated).
       leaflet::leaflet() %>% leaflet::addProviderTiles('CartoDB.Positron') %>% 
-        leaflet::addPolygons(data=subset(world, iso_a3 %in% userDT[, ISO_Alpha]), weight=0.5, layerId=subset(world, iso_a3 %in% userDT[, ISO_Alpha])@data$iso_a3)
+        leaflet::addPolygons(
+          data=subset(world, iso_a3 %in% userDT[, ISO_Alpha]), 
+          weight=borderWidths, 
+#          weight=1, 
+          layerId=subset(world, iso_a3 %in% userDT[, ISO_Alpha])@data$iso_a3)
     })
 
     # Incremental changes to the map (in this case, replacing the
@@ -126,6 +151,7 @@ fishRmap <- function(userdata){
         ind = length(colorImp)*value/max(value),
         colVal = ifelse(
           ISO_Alpha == event$id,
+          #CANNOT BE SCALED AGAINST *BOTH* IMP/EXP - this is a misleading problem, should filter FIRST, and then color/strokewidth
           colorImp[round(length(colorImp)*value/max(value))],
           colorExp[round(length(colorImp)*value/max(value))]
         )
@@ -138,7 +164,7 @@ fishRmap <- function(userdata){
         #        clearShapes() %>%
         leaflet::addPolylines(
           data=fishingLines(spLines), 
-          weight=0.15+colIndex[,ind/length(colorImp)], 
+          weight=0.3+colIndex[,ind/length(colorImp)], 
           col = colIndex[,colVal], 
           group = 'tradelines'
         ), 
