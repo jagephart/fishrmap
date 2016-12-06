@@ -2,7 +2,7 @@
 #' 
 #' @param userdata A string path to a directory file (eventually R vars instead/in addition, but for now we use dir to 2 text files) 
 #' @return TBD 
-#' @import leaflet shiny RColorBrewer data.table magrittr
+#' @import magrittr leaflet shiny grDevices RColorBrewer data.table
 #' @export 
 #' @examples 
 #' someExample <- 'goes here' 
@@ -12,15 +12,29 @@ fishRmap <- function(userdata){
   requireNamespace('leaflet', quietly = TRUE)
   requireNamespace('shiny', quietly = TRUE)
   requireNamespace('RColorBrewer', quietly = TRUE)
-  requireNamespace('geospherce', quietly = TRUE)
+  requireNamespace('grDevices', quietly = TRUE)
+  #  requireNamespace('geosphere', quietly = TRUE)
   requireNamespace('data.table', quietly = TRUE)
   
   `%>%` <- magrittr::`%>%`
+  #  `.` <- data.table::`.`
+  `.` <- NULL
+  iso_a3 <- NULL
+  ISO_Alpha <- NULL
+  Exp_Alpha <- NULL
+  Year <- NULL
+  Species <- NULL
+  spLine <- NULL
+  value <- NULL
+  ind <- NULL
+  colVal <- NULL
+  
   
   #front-load data
   #May want to take a more OOP approach later, but this is fine for now
   userDT <- fishReadR(userdata);
-  newWorld   <- worldEater();
+  #Suppressed because we just use newWorld in sysdata, but good to have for record/transparency
+  #newWorld   <- worldEater();
   world <- joinFishWorld(userDT, newWorld);
   tradeDT <- fishTrade(userDT, newWorld);
   
@@ -34,11 +48,32 @@ fishRmap <- function(userdata){
   
   
   #Set some color options
-  palImp <- colorRampPalette(c("pink", "red"))
+  palImp <- grDevices::colorRampPalette(c("pink", "red"))
   colorImp <- palImp(100)
   
-  palExp <- colorRampPalette(c("white", "black"))
+  palExp <- grDevices::colorRampPalette(c("white", "black"))
   colorExp <- palExp(100)
+  
+  
+  #Create border widths -- WILL WANT TO USE species$selected & year$selected LATER!
+  #  borderWidths <- 100*max(subset(world, iso_a3 %in% userDT[, ISO_Alpha])@data$gdp_md_est)*
+  #    (subset(world, iso_a3 %in% userDT[, ISO_Alpha])@data[
+  #      '2011_a'
+  ##      c(paste0(year$selected, '_', species$selected))
+  #      ]/
+  #       max(subset(world, iso_a3 %in% userDT[, ISO_Alpha])@data[
+  #         '2011_a'
+  ##         c(paste0(year$selected, '_', species$selected))
+  #         ]))/
+  #    subset(world, iso_a3 %in% userDT[, ISO_Alpha])@data$gdp_md_est
+  
+  borderWidths <- 4*(1+scale(subset(world, iso_a3 %in% userDT[, ISO_Alpha])@data[
+    '2011_a'
+    #      c(paste0(year$selected, '_', species$selected))
+    ]/subset(world, iso_a3 %in% userDT[, ISO_Alpha])@data$gdp_md_est))
+  #       ]/subset(world, iso_a3 %in% userDT[, ISO_Alpha])@data$pop_est))
+  
+  
   
   #a few other options for map style - make it user pref selection?
   #leaflet() %>% addProviderTiles('Stamen.Toner') %>% 
@@ -91,7 +126,11 @@ fishRmap <- function(userdata){
       # won't need to change dynamically (at least, not unless the
       # entire map is being torn down and recreated).
       leaflet::leaflet() %>% leaflet::addProviderTiles('CartoDB.Positron') %>% 
-        leaflet::addPolygons(data=subset(world, iso_a3 %in% userDT[, ISO_Alpha]), weight=0.5, layerId=subset(world, iso_a3 %in% userDT[, ISO_Alpha])@data$iso_a3)
+        leaflet::addPolygons(
+          data=subset(world, iso_a3 %in% userDT[, ISO_Alpha]), 
+          weight=borderWidths, 
+          #          weight=1, 
+          layerId=subset(world, iso_a3 %in% userDT[, ISO_Alpha])@data$iso_a3)
     })
     
     # Incremental changes to the map (in this case, replacing the
@@ -126,6 +165,7 @@ fishRmap <- function(userdata){
         ind = length(colorImp)*value/max(value),
         colVal = ifelse(
           ISO_Alpha == event$id,
+          #CANNOT BE SCALED AGAINST *BOTH* IMP/EXP - this is a misleading problem, should filter FIRST, and then color/strokewidth
           colorImp[round(length(colorImp)*value/max(value))],
           colorExp[round(length(colorImp)*value/max(value))]
         )
@@ -138,7 +178,7 @@ fishRmap <- function(userdata){
             #        clearShapes() %>%
             leaflet::addPolylines(
               data=fishingLines(spLines), 
-              weight=0.15+colIndex[,ind/length(colorImp)], 
+              weight=0.3+colIndex[,ind/length(colorImp)], 
               col = colIndex[,colVal], 
               group = 'tradelines'
             ), 

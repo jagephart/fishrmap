@@ -2,9 +2,9 @@
 #' 
 #' @param  userDT A data.table returned from fishReader
 #' @param  world  A spatial object returned from worldEater
-#' @param spLines Vector of SpatialLine/gcIntermediate functions populated in fishTrade()
 #' @return An object of class 'SpatialLinesDataFrame' to be appended to leaflet
-#' @import raster data.table 
+#' @importFrom raster merge 
+#' @import data.table 
 #' @export 
 #' @examples 
 #' someExample <- 'goes here' 
@@ -14,7 +14,14 @@
 joinFishWorld <- function(userDT, world){
   requireNamespace('raster', quietly = TRUE)
   requireNamespace('data.table', quietly = TRUE)
-  
+
+  #  `.` <- data.table::`.`
+  `.` <- NULL
+  ISO_Alpha <- NULL
+  TotVal <- NULL
+  value <- NULL
+  Year <- NULL
+  Species <- NULL
   
 ##Previous method split for each country... may be unnecessary, should just aggregate 
 #  reshpDT <- data.table::dcast(

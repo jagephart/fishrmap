@@ -3,15 +3,27 @@
 #' @param  userDT A data.table returned from fishReader
 #' @param  world  A spatial object returned from worldEater
 #' @return A data.table containing column with line graphs to be appended to leaflet
-#' @import raster sp data.table 
+#' @import sp data.table 
 #' @export 
 #' @examples 
 #' someExample <- 'goes here' 
 
 fishTrade <-function(userDT, world){
-  requireNamespace('raster', quietly = TRUE)
+#  requireNamespace('raster', quietly = TRUE)
   requireNamespace('sp', quietly = TRUE)
   requireNamespace('data.table', quietly = TRUE)
+
+  #  `.` <- data.table::`.`
+  `.` <- NULL
+  iso_a3 <- NULL
+  ISO_Alpha <- NULL
+  Species <- NULL
+  Exp_Alpha <- NULL
+  spLine <- NULL
+  i.Long <- NULL
+  Long <- NULL
+  Lat <- NULL
+  i.Lat <- NULL
   
   worldDT  <- data.table::data.table(world@data);
   wCoord <- sp::coordinates(world);

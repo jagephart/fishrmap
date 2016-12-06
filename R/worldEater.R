@@ -1,7 +1,8 @@
 #' Read (and, if needed, first get and extract) world file. Note: If we include shapefile with library, this may be unnecessary
 #' 
 #' @return A spatial object to be appended to leaflet
-#' @import rgdal raster
+#' @import rgdal 
+#' @importFrom raster shapefile
 #' @export 
 #' @examples 
 #' someExample <- 'goes here' 
@@ -22,11 +23,11 @@ worldEater <- function(){
     error = function(e){
       dir.create(shapePath, showWarnings = FALSE, recursive = TRUE);
       f <- tempfile()
-      download.file(file.path('http://www.naturalearthdata.com/http/',
+      utils::download.file(file.path('http://www.naturalearthdata.com/http/',
                               'www.naturalearthdata.com/download/50m/cultural',
                               'ne_50m_admin_0_countries.zip'), 
                     f);
-      unzip(f, exdir = shapePath);
+      utils::unzip(f, exdir = shapePath);
       
     }, 
     finally = {

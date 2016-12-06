@@ -2,7 +2,7 @@
 #' 
 #' @param userdata A string path to a directory file (eventually R vars instead/in addition, but for now we use dir to 2 text files) 
 #' @return TBD 
-#' @import leaflet shiny RColorBrewer data.table magrittr
+#' @import magrittr leaflet shiny grDevices RColorBrewer data.table
 #' @export 
 #' @examples 
 #' someExample <- 'goes here' 
@@ -12,15 +12,29 @@ fishRmap <- function(userdata){
   requireNamespace('leaflet', quietly = TRUE)
   requireNamespace('shiny', quietly = TRUE)
   requireNamespace('RColorBrewer', quietly = TRUE)
-  requireNamespace('geospherce', quietly = TRUE)
+  requireNamespace('grDevices', quietly = TRUE)
+#  requireNamespace('geosphere', quietly = TRUE)
   requireNamespace('data.table', quietly = TRUE)
   
   `%>%` <- magrittr::`%>%`
+#  `.` <- data.table::`.`
+  `.` <- NULL
+  iso_a3 <- NULL
+  ISO_Alpha <- NULL
+  Exp_Alpha <- NULL
+  Year <- NULL
+  Species <- NULL
+  spLine <- NULL
+  value <- NULL
+  ind <- NULL
+  colVal <- NULL
+ 
   
   #front-load data
   #May want to take a more OOP approach later, but this is fine for now
   userDT <- fishReadR(userdata);
-  newWorld   <- worldEater();
+  #Suppressed because we just use newWorld in sysdata, but good to have for record/transparency
+  #newWorld   <- worldEater();
   world <- joinFishWorld(userDT, newWorld);
   tradeDT <- fishTrade(userDT, newWorld);
   
@@ -34,10 +48,10 @@ fishRmap <- function(userdata){
   
   
   #Set some color options
-  palImp <- colorRampPalette(c("pink", "red"))
+  palImp <- grDevices::colorRampPalette(c("pink", "red"))
   colorImp <- palImp(100)
   
-  palExp <- colorRampPalette(c("white", "black"))
+  palExp <- grDevices::colorRampPalette(c("white", "black"))
   colorExp <- palExp(100)
   
   
