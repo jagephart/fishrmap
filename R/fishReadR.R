@@ -27,7 +27,7 @@ fishReadR <- function(userData){
   Export <- NULL
   #Not advisable, but you can just specify a path to a CSV
   if (class(userData) == 'character'){
-    if (substr(userPath, nchar(userData), nchar(userData)) == '/'){
+    if (substr(userData, nchar(userData), nchar(userData)) == '/'){
       userPath <- substr(userData, 1, nchar(userData)-1)
     }
     #Can suppress because this is stored in sysdata
