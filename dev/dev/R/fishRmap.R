@@ -20,8 +20,10 @@ fishRmap <- function(userdata, import = 'Import', export = 'Export', species = '
   requireNamespace('jsonlite', quietly = TRUE)
   requireNamespace('data.table', quietly = TRUE)
   
-#Test dataset
+#Test datasets
 # userdata <- 'c:/users/andrea/documents/fishdata.txt'
+# userdata <- 'c:/users/andrea/documents/github/fishrmap/dev/data/species_trade.txt'
+	
 	if (class(userdata) == 'character'){
     if (substr(userdata, nchar(userdata), nchar(userdata)) == '/'){
       userPath <- substr(userdata, 1, nchar(userdata)-1)
@@ -63,6 +65,9 @@ fishRmap <- function(userdata, import = 'Import', export = 'Export', species = '
 		print(params[!(params %in% c(names(uDT), params$iso))])
 		message('Returning dataset for your review.')
 		return(uDT)
+	} else {
+		renames <- params[names(params) != 'iso' ]
+		data.table::setnames(uDT, old = as.character(renames), new = names(renames))
 	}
 	
 	
@@ -71,8 +76,13 @@ fishRmap <- function(userdata, import = 'Import', export = 'Export', species = '
 	
 #	userJSON <- jsonlite::toJSON(uDT)
 #	writeLines( userJSON, 'inst/extdata/www/ajax/userdata.json')
-#	writeLines(paste0('var geodata = ', userJSON), 'inst/extdata/www/ajax/userdata.js')
-	userJS <- paste0('var geodata = ',  jsonlite::toJSON(uDT))
+#	writeLines(paste0('var userdata = ', userJSON), 'inst/extdata/www/ajax/userdata.js')
+	#wrldJS <- paste0('var userdata = ',  readLines('inst/extdata/www/ajax/world.json'))
+
+	userJS <- paste0('var userdata = ',  jsonlite::toJSON(uDT))
+	
+	
+	
 	ui <- shiny::bootstrapPage(
 		shiny::tags$head(
 			shiny::includeScript("inst/extdata/www/js/api.js"),  # Always include this file this app
@@ -80,12 +90,14 @@ fishRmap <- function(userdata, import = 'Import', export = 'Export', species = '
 			shiny::tags$script(src="https://d3js.org/d3.v4.js"), #D3.js
 			shiny::tags$script(src="https://d3js.org/topojson.v1.min.js"), #D3 topojson
 			shiny::includeScript("inst/extdata/www/js/L.D3SvgOverlay.min.js"), #D3-leaflet integration plugin
+			shiny::includeScript("inst/extdata/www/js/underscore-min.js"),  # Always include this file this app
 			shiny::tags$link(rel = "stylesheet", type = "text/css", href = "https://unpkg.com/leaflet@1.0.2/dist/leaflet.css"),
 			shiny::tags$link(rel = "stylesheet", type = "text/css", href = "https://unpkg.com/leaflet@1.0.2/dist/leaflet.css"),
 			shiny::tags$style(HTML('        
 				html { height: 100% }
         body { height: 100%; margin: 0; padding: 0 }
         #map-canvas { height: 100%; width: 100% }')),
+			shiny::includeScript("inst/extdata/www/js/world.js"),  # geojson
 			shiny::tags$script(HTML(userJS)) #user data
 
 		),		
@@ -106,6 +118,8 @@ fishRmap <- function(userdata, import = 'Import', export = 'Export', species = '
 
 	shiny::shinyApp(ui = ui, server = server)	
 
+	
+	
 	setwd(userwd)
 
 }
