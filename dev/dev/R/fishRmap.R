@@ -81,6 +81,12 @@ fishRmap <- function(userdata, import = 'Import', export = 'Export', species = '
 
 	userJS <- paste0('var userdata = ',  jsonlite::toJSON(uDT))
 	
+	iso_type <- ifelse(
+		tolower(iso) == 'numeric', 
+		'var iso = "iso_n3";', 
+		'var iso = "iso_a3";'
+	)
+	
 	
 	
 	ui <- shiny::bootstrapPage(
@@ -98,7 +104,8 @@ fishRmap <- function(userdata, import = 'Import', export = 'Export', species = '
         body { height: 100%; margin: 0; padding: 0 }
         #map-canvas { height: 100%; width: 100% }')),
 			shiny::includeScript("inst/extdata/www/js/world.js"),  # geojson
-			shiny::tags$script(HTML(userJS)) #user data
+			shiny::tags$script(HTML(userJS)), #user data
+			shiny::tags$script(HTML(iso_type)) #Type of ISO code (character or numeric)
 
 		),		
 		shiny::tags$body(

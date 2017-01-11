@@ -21,17 +21,26 @@ app = function() {
 
 			var years = _.uniq(_.pluck(userdata, 'yrs')).sort();
 			
-			console.log(years);
+//			console.log(years);
 			
 			
 			function whenClicked(e) {
 				// e = event
-				console.log(e.target.feature.properties);
-				var iso_n = e.target.feature.properties[iso];
+//				console.log(e.target.feature.properties);
+				console.log(e.target.feature);
+				var iso_id = e.target.feature.properties[iso];
 				
-				var imports = _.where(userdata, {imp: parseFloat(iso_n)});
-				var exports = _.where(userdata, {exp: parseFloat(iso_n)});
-				console.log({imps: imports, exps: exports})
+				var imports = _.where(userdata, {imp: parseFloat(iso_id)});
+				var exports = _.where(userdata, {exp: parseFloat(iso_id)});
+//				console.log({imps: imports, exps: exports})
+				
+				var sources = _.uniq(_.pluck(imports, 'exp'));
+				var targets = _.uniq(_.pluck(exports, 'imp'));
+				console.log({src: sources, tgt: targets})
+				//May have to figure this out tomorrow; for now, just set to zero
+				var thisCoord = 0;
+				sources.forEach(function(d){d.arc = 0});
+				
 				// You can make your ajax call declaration here
 				//$.ajax(... 
 			}
