@@ -71,8 +71,11 @@ app = function() {
 				var sources = _.uniq(_.pluck(imports, 'exp'));
 				var targets = _.uniq(_.pluck(exports, 'imp'));
 //				console.log({src: sources, tgt: targets})
-	
-				var thisCoord = e.target.feature.geometry.coordinates[0][0][0];
+
+				var thisPoint = e.target.feature.geometry.coordinates[0][0][0];
+				var thisXY = map.latLngToLayerPoint(new L.LatLng(thisPoint[0], thisPoint[1]));
+				var thisCoord = [thisXY.x, thisXY.y]
+//				var thisCoord = new L.LatLng(thisPoint[0], thisPoint[1]);
 				
 //				e.arcs = {type: "MultiLineString", coordinates = []};
 				sources.forEach(function(d){
@@ -83,7 +86,11 @@ app = function() {
 					//console.log(thisArc);
 
 					if (typeof thisArc != 'undefined') {
-						var thatCoord = thisArc.geometry.coordinates[0][0][0];
+						var thatPoint = thisArc.geometry.coordinates[0][0][0];
+						var thatXY = map.latLngToLayerPoint(new L.LatLng(thatPoint[0], thatPoint[1]));
+						var thatCoord = [thatXY.x, thatXY.y]
+
+//						var thatCoord = new L.LatLng(thatPoint[0], thatPoint[1]);
 						console.log([thisCoord,thatCoord]);
 						//d.arc = 0;
 
