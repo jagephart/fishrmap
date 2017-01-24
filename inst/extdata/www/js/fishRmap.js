@@ -1,4 +1,6 @@
-
+//WHAT YOU NEED TO DO is: 
+// 1. make sure that you're accounting for the CURRENT CENTER when you resize the svg
+// 2. select + transform the path? or just redraw? idk yet
 app = function() {
   
   return {
@@ -72,11 +74,15 @@ app = function() {
 				var targets = _.uniq(_.pluck(exports, 'imp'));
 //				console.log({src: sources, tgt: targets})
 
+				var thisCoord = e.target.feature.geometry.coordinates[0][0][0];
+				/*
 				var thisPoint = e.target.feature.geometry.coordinates[0][0][0];
 				var thisXY = map.latLngToLayerPoint(new L.LatLng(thisPoint[0], thisPoint[1]));
 				var thisCoord = [thisXY.x, thisXY.y]
-//				var thisCoord = new L.LatLng(thisPoint[0], thisPoint[1]);
+				*/
 				
+//				var thisCoord = new L.LatLng(thisPoint[0], thisPoint[1]);
+				console.log(thisCoord)
 //				e.arcs = {type: "MultiLineString", coordinates = []};
 				sources.forEach(function(d){
 	//				console.log(d);
@@ -86,16 +92,19 @@ app = function() {
 					//console.log(thisArc);
 
 					if (typeof thisArc != 'undefined') {
+						var thatCoord = thisArc.geometry.coordinates[0][0][0];
+						/*
 						var thatPoint = thisArc.geometry.coordinates[0][0][0];
 						var thatXY = map.latLngToLayerPoint(new L.LatLng(thatPoint[0], thatPoint[1]));
 						var thatCoord = [thatXY.x, thatXY.y]
+						*/
 
-//						var thatCoord = new L.LatLng(thatPoint[0], thatPoint[1]);
-						console.log([thisCoord,thatCoord]);
+//						console.log([thisCoord,thatCoord]);
 						//d.arc = 0;
 
 						svg.selectAll("path")
-							.style("stroke", "none")
+						.remove();
+//							.style("stroke", "none")
 
 						svg.append("path")
 							.datum({type: "LineString", coordinates: [thisCoord, thatCoord]})
@@ -152,10 +161,22 @@ app = function() {
 
 				g   .attr("transform", "translate(" + -mapTL.x + "," + -mapBR.y + ")");					
 
+				g   .selectAll("path")
+						.attr("transform", "translate(" + -mapTL.x + "," + -mapBR.y + ")");					
 //				console.log(selectedISO);
 
 				if (typeof selectedISO != 'undefined') {
-					whenClicked(selectedISO);
+					//updateSelected(selectedISO);
+						svg.selectAll("path")
+						.attr("transform", 
+							function(d) { 
+							console.log(d);
+							return("translate(0,0)")
+//								return "translate("+ 
+//									map.latLngToLayerPoint(d.LatLng).x +","+ 
+//									map.latLngToLayerPoint(d.LatLng).y +")";
+							}
+						)					
 				}
 			}
 			
