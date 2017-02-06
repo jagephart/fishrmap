@@ -93,10 +93,12 @@ fishRmap <- function(userdata, import = 'Import', export = 'Export', species = '
     shiny::tags$head(
       shiny::includeScript("inst/extdata/www/js/api.js"),  # Always include this file this app
       shiny::tags$script(src="https://unpkg.com/leaflet@1.0.2/dist/leaflet.js"), #Leaflet JS
-      shiny::tags$script(src="https://d3js.org/d3.v4.js"), #D3.js
+#      shiny::tags$script(src="https://d3js.org/d3.v4.js"), #D3.js
+      shiny::tags$script(src="https://d3js.org/d3.v3.js"), #D3.js
       shiny::tags$script(src="https://d3js.org/topojson.v1.min.js"), #D3 topojson
-#      shiny::includeScript("inst/extdata/www/js/L.D3SvgOverlay.min.js"), #D3-leaflet integration plugin
-      shiny::includeScript("inst/extdata/www/js/underscore-min.js"),  # Always include this file this app
+#      shiny::tags$script(src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.4.9/d3.min.js"),
+      shiny::includeScript("inst/extdata/www/js/L.D3SvgOverlay.min.js"), #D3-leaflet integration plugin
+      shiny::includeScript("inst/extdata/www/js/underscore-min.js"),  # Really helpful obj/arr utilities
       shiny::tags$link(rel = "stylesheet", type = "text/css", href = "https://unpkg.com/leaflet@1.0.2/dist/leaflet.css"),
       shiny::tags$link(rel = "stylesheet", type = "text/css", href = "https://unpkg.com/leaflet@1.0.2/dist/leaflet.css"),
       shiny::tags$style(shiny::HTML('        
