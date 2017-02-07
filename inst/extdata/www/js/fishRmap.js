@@ -6,7 +6,52 @@ app = function() {
   return {
     
     init : function() {
-			//empty string to be populated later
+
+		if (typeof(Number.prototype.toRadians) === "undefined") {
+			Number.prototype.toRadians = function() {
+				return this * Math.PI / 180;
+			}
+		}
+
+		if (typeof(Number.prototype.toDegrees) === "undefined") {
+			Number.prototype.toDegrees = function() {
+				return this * 180 / Math.PI;
+			}
+		}
+
+		function MidPoint(a, b){
+						var lat1 = a[0]
+						var lon1 = a[1]
+						var lat2 = b[0]; 
+						var lon2 = b[1]
+						//console.log(d3.geo.interpolate(thisCoord, thatCoord))
+						var R = 6371e3; // metres
+						var φ1 = lat1.toRadians();
+						var φ2 = lat2.toRadians();
+						var λ1 = lon1.toRadians();
+						var λ2 = lon2.toRadians();
+						var Δφ = (lat2-lat1).toRadians();
+						var Δλ = (lon2-lon1).toRadians();
+						var Bx = Math.cos(φ2) * Math.cos(λ2-λ1);
+						var By = Math.cos(φ2) * Math.sin(λ2-λ1);
+						var φ3 = Math.atan2(
+							Math.sin(φ1) + Math.sin(φ2),
+							Math.sqrt( (Math.cos(φ1)+Bx)*(Math.cos(φ1)+Bx) + By*By ) 
+						);
+						var λ3 = λ1 + Math.atan2(By, Math.cos(φ1) + Bx);
+
+						var a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+										Math.cos(φ1) * Math.cos(φ2) *
+										Math.sin(Δλ/2) * Math.sin(Δλ/2);
+						var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+						var d = R * c;
+
+						return([φ3.toDegrees(), λ3.toDegrees()])
+		}
+
+		
+		//empty string to be populated later
 			var selectedISO;
 
 			//Create map variable - this will give you a zoomable box starting zoomed into "setView( [Lat, Lng] = [38.977043, -76.503371], zoom level = 13)"
@@ -41,13 +86,14 @@ app = function() {
 				.style('z-index', '-1')
 				.enter()
 					.append('path')
-					.attr('d', proj.pathFromGeojson)
-					.attr('stroke', 'black')
-					.attr('fill', function(){ return d3.hsl(Math.random() * 360, 0.9, 0.5) })
-					.attr('fill-opacity', '0.5')
+						.attr('d', proj.pathFromGeojson)
+						.attr('stroke', 'orange')
+						.attr('stroke-opacity', '0.65')
+						.attr('fill', function(){ return d3.hsl(Math.random() * 360, 0.9, 0.5) })
+						.attr('fill-opacity', '0.5')
 //					.on('click', function(d){drawCountries(d)})
 					;
-				upd.attr('stroke-width', 1 / proj.scale);
+				upd.attr('stroke-width', function() {return(Math.random() * 20 / proj.scale)});
 			});
 
 //			var arcs = [];
@@ -77,46 +123,30 @@ app = function() {
     // original SVG 
     var g = svg.append("g").attr("class", "leaflet-zoom-hide");
 */
+var linePathGenerator = d3.svg.line()
+    .x(function(d) { return d.x; })
+    .y(function(d) { return d.y; })
+    .interpolate("linear");
+		
 
 			var arcsOverlay = L.d3SvgOverlay(function(sel, proj) {
 				var upd = sel.selectAll('path')
 					.data([arcs]);
 
 				console.log([sel, proj, upd])
-/*	
-				if (typeof pathNode != 'undefined') {
-					pathNode
-					.enter()
-					.transition(300)
-						.attr('d', proj.pathFromGeojson)
-						.attr('stroke', 'black')
-				} else {
-					upd
-						.exit()
-							.attr("class", "exit")
-						.transition(t)
-						.style('stroke-width', 1e-6)
-						.remove;
-*/
-
 					upd
 					.enter()
 						.append('path')
 							.attr('d', proj.pathFromGeojson)
-//							.transition(t)
 							.attr('stroke', 'black')
-	//						.attr('fill', function(){ return d3.hsl(Math.random() * 360, 0.9, 0.5) })
-	//						.attr('fill-opacity', '0.5')
-	//						.on('click', function(d){drawCountries(d)})
+							.attr('fill', 'none')
+							.attr('class', 'arc')
 						;
-//				}
-//					upd.transition(t).attr('stroke-width', 1 / proj.scale);
 					upd.attr('stroke-width', 1 / proj.scale);
 				});
 
-//			arcsOverlay.addTo(map);			
-
-//Still need to make it a d3SvgOverlay for the sake of projection				
+				/*
+//Still need to make it a d3SvgOverlay for the sake of projection	- at this stage (and maybe any stage) we're not using this or showArcs
 			function addArcs(thisISO){
 				var svg = d3.select("#map-canvas > div.leaflet-pane.leaflet-map-pane > div.leaflet-pane.leaflet-overlay-pane > svg:nth-child(3)")	
 				var g = svg.append('g').attr("class", "d3-overlay").attr("id", "arcs" + thisISO)
@@ -130,6 +160,7 @@ app = function() {
 						.append('path')
 							.attr('d', proj.pathFromGeojson)
 	//							.transition(t)
+							.attr('class', 'arc')
 							.attr('stroke', 'black')
 	//						.attr('fill', function(){ return d3.hsl(Math.random() * 360, 0.9, 0.5) })
 	//						.attr('fill-opacity', '0.5')
@@ -152,22 +183,13 @@ app = function() {
 				});
 				console.log(showThis);
 			}
-			
+*/			
 			function whenClicked(e){
 				console.log(e);
 				selectedISO = e;
 
 //				Hide old arcs				
 			map.removeLayer(arcsOverlay);
-/*
-				d3.select("#map-canvas > div.leaflet-pane.leaflet-map-pane > div.leaflet-pane.leaflet-overlay-pane > svg:nth-child(3)")
-					.select("#arcs"+iso_id)
-					.selectAll("path")
-//					.attr('class', 'hiddenArc'+iso_id)
-					.transition(t)
-					.attr('stroke-width', 1e-6);
-//					.remove();				
-*/
 // 		set id of new arcs (must be done after hiding
 				iso_id = e.target.feature.properties[iso];			
 				
@@ -180,32 +202,29 @@ app = function() {
 
 				var thisCoord = e.target.feature.geometry.coordinates[0][0][0];
 				console.log(thisCoord)
-				arcs = {type: "MultiLineString", coordinates: []};
+				//arcs = {type: "MultiLineString", coordinates: []};
+				arcs = {type: "FeatureCollection", "features": []};
 				sources.forEach(function(d){
-	//				console.log(d);
 					var thisArc = _.find(world.features, function(feat){
 						return feat.properties[iso] == d;
 					})
-					//console.log(thisArc);
 					
 					if (typeof thisArc != 'undefined') {
 						var thatCoord = thisArc.geometry.coordinates[0][0][0];
-						arcs.coordinates.push([thisCoord, thatCoord])
+
+						//arcs.coordinates.push([thisCoord, thatCoord])
+				
+						arcs.features.push({
+							"type" : "feature", 
+							"geometry" : {
+								"type" : "LineString", 
+								"coordinates":	[thisCoord, MidPoint(thisCoord, thatCoord), thatCoord]
+							}
+						})
 					}
 				})
 				console.log(arcs)
 				arcsOverlay.addTo(map);			
-/*
-				var newArcs = d3.select("#map-canvas > div.leaflet-pane.leaflet-map-pane > div.leaflet-pane.leaflet-overlay-pane > svg:nth-child(3) > g")
-					.selectAll("path")
-					
-				if(typeof newArcs == 'undefined'){
-					addArcs(iso_id);								
-				} else {
-					showArcs(iso_id);			
-				}
-				
-*/
 			}
 			
 			function onEachFeature(feature, layer) {
@@ -216,7 +235,7 @@ app = function() {
 			}
 
 			
-			L.control.layers({"Geo Tiles": tiles}, {"Countries": countriesOverlay}, {"Trade links": arcsOverlay}).addTo(map);
+			L.control.layers({"Geo Tiles": tiles}, {"Countries": countriesOverlay, "Trade links": arcsOverlay}).addTo(map);
 
 			countries = world.features; 
 			countriesOverlay.addTo(map);			
