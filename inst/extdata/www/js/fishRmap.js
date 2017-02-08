@@ -18,36 +18,60 @@ app = function() {
 				return this * 180 / Math.PI;
 			}
 		}
+		var arcLevel = 0;
+		var geoCArr = [];
+		//based on  http://www.movable-type.co.uk/scripts/latlong.html
+		function MidPoint(start, finish, type = "push", arcLimit = 10){
+			arcLevel += 1;
+			var lat1 = start[0]
+			var lon1 = start[1]
+			var lat2 = finish[0]; 
+			var lon2 = finish[1]
+			//console.log(d3.geo.interpolate(thisCoord, thatCoord))
+			var R = 6371e3; // meters
+			var φ1 = lat1.toRadians();
+			var φ2 = lat2.toRadians();
+			var λ1 = lon1.toRadians();
+			var λ2 = lon2.toRadians();
+			var Δφ = (lat2-lat1).toRadians();
+			var Δλ = (lon2-lon1).toRadians();
+			var Bx = Math.cos(φ2) * Math.cos(λ2-λ1);
+			var By = Math.cos(φ2) * Math.sin(λ2-λ1);
+			var φ3 = Math.atan2(
+				Math.sin(φ1) + Math.sin(φ2),
+				Math.sqrt( (Math.cos(φ1)+Bx)*(Math.cos(φ1)+Bx) + By*By ) 
+			);
+			var λ3 = λ1 + Math.atan2(By, Math.cos(φ1) + Bx);
 
-		function MidPoint(a, b){
-						var lat1 = a[0]
-						var lon1 = a[1]
-						var lat2 = b[0]; 
-						var lon2 = b[1]
-						//console.log(d3.geo.interpolate(thisCoord, thatCoord))
-						var R = 6371e3; // metres
-						var φ1 = lat1.toRadians();
-						var φ2 = lat2.toRadians();
-						var λ1 = lon1.toRadians();
-						var λ2 = lon2.toRadians();
-						var Δφ = (lat2-lat1).toRadians();
-						var Δλ = (lon2-lon1).toRadians();
-						var Bx = Math.cos(φ2) * Math.cos(λ2-λ1);
-						var By = Math.cos(φ2) * Math.sin(λ2-λ1);
-						var φ3 = Math.atan2(
-							Math.sin(φ1) + Math.sin(φ2),
-							Math.sqrt( (Math.cos(φ1)+Bx)*(Math.cos(φ1)+Bx) + By*By ) 
-						);
-						var λ3 = λ1 + Math.atan2(By, Math.cos(φ1) + Bx);
+			var a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+							Math.cos(φ1) * Math.cos(φ2) *
+							Math.sin(Δλ/2) * Math.sin(Δλ/2);
+			var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 
-						var a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-										Math.cos(φ1) * Math.cos(φ2) *
-										Math.sin(Δλ/2) * Math.sin(Δλ/2);
-						var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+			var d = R * c;
+			if(arcLevel < arcLimit){
+			 if(arcLevel > 1){
+				if(type == "push"){
+					geoCArr.push([φ3.toDegrees(), λ3.toDegrees()], finish) 
+					MidPoint([φ3.toDegrees(), λ3.toDegrees()], finish, type = "push")
+				} else {	
+					geoCArr.unshift([φ3.toDegrees(), λ3.toDegrees()])
+					MidPoint(start, [φ3.toDegrees(), λ3.toDegrees()], type = "unshift")
+				}
+				//				return([φ3.toDegrees(), λ3.toDegrees()])
+			 } else {
+				geoCArr.push([φ3.toDegrees(), λ3.toDegrees()])							 
+//				console.log([start,finish])
+				MidPoint([φ3.toDegrees(), λ3.toDegrees()], finish, type = "push")
 
-						var d = R * c;
-
-						return([φ3.toDegrees(), λ3.toDegrees()])
+				arcLevel = 1;
+//				console.log([start,finish])
+				MidPoint(start, [φ3.toDegrees(), λ3.toDegrees()], type = "unshift")
+//				return([φ3.toDegrees(), λ3.toDegrees()])
+			 }
+			} //else {
+//				return([φ3.toDegrees(), λ3.toDegrees()])							
+//			}
 		}
 
 		
@@ -65,7 +89,7 @@ app = function() {
 			
 			var tiles = L.tileLayer('http://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png', {
 				maxZoom:19,
-				minZoom:3,
+				minZoom:2,
 				attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="http://cartodb.com/attributions">CartoDB</a>',
 				subdomains: 'abcd'
 			});
@@ -211,14 +235,16 @@ var linePathGenerator = d3.svg.line()
 					
 					if (typeof thisArc != 'undefined') {
 						var thatCoord = thisArc.geometry.coordinates[0][0][0];
-
+						geoCArr = [];
+						arcLevel = 0;
 						//arcs.coordinates.push([thisCoord, thatCoord])
-				
+						MidPoint(thisCoord, thatCoord)
+						
 						arcs.features.push({
 							"type" : "feature", 
 							"geometry" : {
 								"type" : "LineString", 
-								"coordinates":	[thisCoord, MidPoint(thisCoord, thatCoord), thatCoord]
+								"coordinates":	[thisCoord].concat(geoCArr).concat([thatCoord])
 							}
 						})
 					}
