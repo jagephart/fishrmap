@@ -1,4 +1,4 @@
-# Dean Attali, July 2015
+#Credit: Dean Attali, July 2015
 
 # listen for when javascript makes an api call
 observeEvent(session$input[['api']], {

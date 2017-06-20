@@ -1,207 +1,136 @@
 #' Call visualization function
 #' 
-#' @param userdata A string path to a directory file (eventually R vars instead/in addition, but for now we use dir to 2 text files) 
+#' @param userdata A string path to the file containing fishery data
+#' @param import Character string name of column with three-character or -digit ISO code of country importing fish
+#' @param export Character string name of column with three-character or -digit ISO code of country exporting fish
+#' @param species Character string name of column with fish species names
+#' @param value Character string name of column with value of trade
+#' @param year Character string name of column with year
+#' @param iso Type of ISO country identifier used in "import" and "export" columns - either "character" or "numeric" 
 #' @return TBD 
-#' @import magrittr leaflet shiny grDevices RColorBrewer data.table
+#' @import shiny data.table
+#' @importFrom jsonlite toJSON
+#' @importFrom jsonlite fromJSON
 #' @export 
 #' @examples 
 #' someExample <- 'goes here' 
 
-fishRmap <- function(userdata){
-  requireNamespace('magrittr', quietly = TRUE)
-  requireNamespace('leaflet', quietly = TRUE)
+fishRmap <- function(userdata, import = 'Import', export = 'Export', species = 'Species', value = 'value', year = 'Year', iso = 'numeric'){
   requireNamespace('shiny', quietly = TRUE)
-  requireNamespace('RColorBrewer', quietly = TRUE)
-  requireNamespace('grDevices', quietly = TRUE)
-  #  requireNamespace('geosphere', quietly = TRUE)
+  requireNamespace('jsonlite', quietly = TRUE)
   requireNamespace('data.table', quietly = TRUE)
   
-  `%>%` <- magrittr::`%>%`
-  #  `.` <- data.table::`.`
-  `.` <- NULL
-  iso_a3 <- NULL
-  ISO_Alpha <- NULL
-  Exp_Alpha <- NULL
-  Year <- NULL
-  Species <- NULL
-  spLine <- NULL
-  value <- NULL
-  ind <- NULL
-  colVal <- NULL
+  #Test datasets
+  # userdata <- 'c:/users/andrea/documents/fishdata.txt'
+  # userdata <- 'c:/users/andrea/documents/github/fishrmap/dev/data/species_trade.txt'
   
-  
-  #front-load data
-  #May want to take a more OOP approach later, but this is fine for now
-  userDT <- fishReadR(userdata);
-  #Suppressed because we just use newWorld in sysdata, but good to have for record/transparency
-  #newWorld   <- worldEater();
-  world <- joinFishWorld(userDT, newWorld);
-  tradeDT <- fishTrade(userDT, newWorld);
-  
-  #This will crash the program...
-  #sink('c:/users/andrea/documents/testout.json'); jsonlite::toJSON(tradeDT[, c(colnames(tradeDT)[colnames(tradeDT) != 'spLine']), with = FALSE]); sink();
-  
-  #This may work, however... just need to set colors etc
-  #  sink('c:/users/andrea/documents/testout.json'); 
-  #  jsonlite::toJSON(tradeDT[, .(Source = ISO_Alpha, Long, Lat, Target = Exp_Alpha, trgLong = i.Long, trgLat = i.Lat)]); 
-  #  sink();
-  
-  
-  #Set some color options
-  palImp <- grDevices::colorRampPalette(c("pink", "red"))
-  colorImp <- palImp(100)
-  
-  palExp <- grDevices::colorRampPalette(c("white", "black"))
-  colorExp <- palExp(100)
-  
-  
-  #Create border widths -- WILL WANT TO USE species$selected & year$selected LATER!
-  #  borderWidths <- 100*max(subset(world, iso_a3 %in% userDT[, ISO_Alpha])@data$gdp_md_est)*
-  #    (subset(world, iso_a3 %in% userDT[, ISO_Alpha])@data[
-  #      '2011_a'
-  ##      c(paste0(year$selected, '_', species$selected))
-  #      ]/
-  #       max(subset(world, iso_a3 %in% userDT[, ISO_Alpha])@data[
-  #         '2011_a'
-  ##         c(paste0(year$selected, '_', species$selected))
-  #         ]))/
-  #    subset(world, iso_a3 %in% userDT[, ISO_Alpha])@data$gdp_md_est
-  
-  borderWidths <- 4*(1+scale(subset(world, iso_a3 %in% userDT[, ISO_Alpha])@data[
-    '2011_a'
-    #      c(paste0(year$selected, '_', species$selected))
-    ]/subset(world, iso_a3 %in% userDT[, ISO_Alpha])@data$gdp_md_est))
-  #       ]/subset(world, iso_a3 %in% userDT[, ISO_Alpha])@data$pop_est))
-  
-  
-  
-  #a few other options for map style - make it user pref selection?
-  #leaflet() %>% addProviderTiles('Stamen.Toner') %>% 
-  #leaflet() %>% addProviderTiles('Esri.WorldTopoMap') %>% 
-  #leaflet() %>% addProviderTiles('OpenStreetMap.BlackAndWhite') %>% 
-  
-  
-  
-  #  leaflet::leaflet() %>% leaflet::addProviderTiles('CartoDB.Positron') %>% 
-  #    leaflet::addPolygons(data=subset(world, iso_a3 %in% userDT[, ISO_Alpha]), weight=0.5) #%>% 
-  ##    leaflet::addPolylines(data=sln, weight=1, color = "red")
-  
-  
-  #thisISO is defined within shiny
-  #spLines <- tradeDT[ISO_Alpha == thisISO | Exp_Alpha == thisISO]
-  
-  ui <- shiny::bootstrapPage(
-    tags$style(type = "text/css", "html, body {width:100%;height:100%}"),
-    leaflet::leafletOutput("map", width = "100%", height = "100%")#,
-    #    shiny::absolutePanel(top = 10, right = 10,
-    #                  shiny::sliderInput("range", "Year", min(userDT$Year), max(userDT$Year),
-    #                              value = range(userDT$Year), step = 1
-    #                  ),
-    #                  shiny::selectInput("colors", "Color Scheme",
-    #                              rownames(subset(RColorBrewer::brewer.pal.info, category %in% c("seq", "div")))
-    #                  ),
-    #                  shiny::checkboxInput("legend", "Show legend", TRUE)
-    #    )
-  )
-  
-  #  ui <- shiny::fluidPage(
-  #    leaflet::leafletOutput("map")
-  #  ) 
-  
-  server <- function(input, output, session) {
-    
-    # Reactive expression for the data subsetted to what the user selected
-    ##    filteredData <- reactive({
-    ##      quakes[quakes$mag >= input$range[1] & quakes$mag <= input$range[2],]
-    ##    })
-    
-    # This reactive expression represents the palette function,
-    # which changes as the user makes selections in UI.
-    #colorpal <- shiny::reactive({
-    #  leaflet::colorNumeric(input$colors, userDT$Year)
-    #})
-    
-    output$map <- leaflet::renderLeaflet({
-      # Use leaflet() here, and only include aspects of the map that
-      # won't need to change dynamically (at least, not unless the
-      # entire map is being torn down and recreated).
-      leaflet::leaflet() %>% leaflet::addProviderTiles('CartoDB.Positron') %>% 
-        leaflet::addPolygons(
-          data=subset(world, iso_a3 %in% userDT[, ISO_Alpha]), 
-          weight=borderWidths, 
-          #          weight=1, 
-          layerId=subset(world, iso_a3 %in% userDT[, ISO_Alpha])@data$iso_a3)
-    })
-    
-    # Incremental changes to the map (in this case, replacing the
-    # circles when a new color is chosen) should be performed in
-    # an observer. Each independent set of things that can change
-    # should be managed in its own observer.
-    shiny::observe({
-      ##      pal <- colorpal()
-      
-      event <- input$map_shape_click
-      if (is.null(event))
-        return()
-      
-      if (is.na(event))
-        return()
-      
-      #Log event
-      print(event)
-      
-      #For now, use dummy year = 2011 and dummy species = 'a'
-      year <- list('selected' = '2011')
-      species <- list('selected' = 'a')
-      
-      thisSubset <- tradeDT[(ISO_Alpha == event$id | Exp_Alpha == event$id) & 
-                              Year == year$selected &
-                              Species == species$selected]
-      
-      
-      spLines <- thisSubset[, spLine]
-      
-      colIndex <- thisSubset[,.(
-        ind = length(colorImp)*value/max(value),
-        colVal = ifelse(
-          ISO_Alpha == event$id,
-          #CANNOT BE SCALED AGAINST *BOTH* IMP/EXP - this is a misleading problem, should filter FIRST, and then color/strokewidth
-          colorImp[round(length(colorImp)*value/max(value))],
-          colorExp[round(length(colorImp)*value/max(value))]
-        )
-      )]
-      
-      
-      try(leaflet::leafletProxy("map") %>%  clearGroup("tradelines"), silent = TRUE);
-      try(leaflet::leafletProxy("map") %>%
-            #        clearGroup("tradelines") %>%
-            #        clearShapes() %>%
-            leaflet::addPolylines(
-              data=fishingLines(spLines), 
-              weight=0.3+colIndex[,ind/length(colorImp)], 
-              col = colIndex[,colVal], 
-              group = 'tradelines'
-            ), 
-          silent = TRUE);
-      #silent = FALSE);
-    })
-    
-    # Use a separate observer to recreate the legend as needed.
-    #    observe({
-    #      proxy <- leafletProxy("map", data = quakes)
-    
-    # Remove any existing legend, and only if the legend is
-    # enabled, create a new one.
-    ##      proxy %>% clearControls()
-    ##      if (input$legend) {
-    ##        pal <- colorpal()
-    ##        proxy %>% addLegend(position = "bottomright",
-    ##                            pal = pal, values = ~mag
-    ##        )
-    ##      }
-    #    })
+  if (class(userdata) == 'character'){
+    if (substr(userdata, nchar(userdata), nchar(userdata)) == '/'){
+      userPath <- substr(userdata, 1, nchar(userdata)-1)
+    }
+    #Can suppress because this is stored in sysdata
+    #    cNames <- data.table::data.table(utils::read.table(paste0(userPath, '/Country_Codes_Names.txt')))
+    uDT <- data.table::data.table(utils::read.table(userdata))
+    if(length(names(uDT)) < 3){
+      uDT <- data.table::fread(userdata)
+    }
+  } else {
+    if('data.frame' %in% class(userdata)){
+      uDT <- data.table::data.table(userdata)
+    } else {
+      warning('Parameter "userdata" is not a valid file name or data.frame')
+      return('Please pass a well-formed dataset to fishRmap')
+    }
   }
   
-  shiny::shinyApp(ui, server)
+  #mapPath <- paste0(.libPaths(), '/fishRmap');
+  
+  ##For testing: 
+  mapPath <- 'c:/users/andrea/documents/github/fishrmap';
+  import = 'Import'; export = 'Export'; species = 'Species'; value = 'value'; year = 'Year'; iso = 'numeric'
+  ##end testing stuff
+  
+  params <- list()
+  params$imp	= tolower(import) 
+  params$exp	= tolower(export) 
+  params$spc	= tolower(species)
+  params$val	= tolower(value)
+  params$yrs	= tolower(year)
+  params$iso	= tolower(iso)
+  
+  data.table::setnames(uDT, old = names(uDT), new = tolower(names(uDT)))
+  
+  if(length(params[!(params %in% c(names(uDT), params$iso))]) > 0){
+    message('Problem - the following required variables are missing from the dataset:')
+    print(params[!(params %in% c(names(uDT), params$iso))])
+    message('Returning dataset for your review.')
+    return(uDT)
+  } else {
+    renames <- params[names(params) != 'iso' ]
+    data.table::setnames(uDT, old = as.character(renames), new = names(renames))
+  }
+  
+  
+  userwd <- getwd()
+  setwd(mapPath)
+  
+  #	userJSON <- jsonlite::toJSON(uDT)
+  #	writeLines( userJSON, 'inst/extdata/www/ajax/userdata.json')
+  #	writeLines(paste0('var userdata = ', userJSON), 'inst/extdata/www/ajax/userdata.js')
+  #wrldJS <- paste0('var userdata = ',  readLines('inst/extdata/www/ajax/world.json'))
+  
+  userJS <- paste0('var userdata = ',  jsonlite::toJSON(uDT))
+  
+  iso_type <- ifelse(
+    tolower(iso) == 'numeric', 
+    'var iso = "iso_n3";', 
+    'var iso = "iso_a3";'
+  )
+  
+  
+  
+  ui <- shiny::bootstrapPage(
+    shiny::tags$head(
+      shiny::includeScript("inst/extdata/www/js/api.js"),  # Always include this file this app
+      shiny::tags$script(src="https://unpkg.com/leaflet@1.0.2/dist/leaflet.js"), #Leaflet JS
+#      shiny::tags$script(src="https://d3js.org/d3.v4.js"), #D3.js
+      shiny::tags$script(src="https://d3js.org/d3.v3.js"), #D3.js
+      shiny::tags$script(src="https://d3js.org/topojson.v1.min.js"), #D3 topojson
+#      shiny::tags$script(src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.4.9/d3.min.js"),
+      shiny::includeScript("inst/extdata/www/js/L.D3SvgOverlay.min.js"), #D3-leaflet integration plugin
+      shiny::includeScript("inst/extdata/www/js/underscore-min.js"),  # Really helpful obj/arr utilities
+      shiny::tags$link(rel = "stylesheet", type = "text/css", href = "https://unpkg.com/leaflet@1.0.2/dist/leaflet.css"),
+      shiny::tags$link(rel = "stylesheet", type = "text/css", href = "https://unpkg.com/leaflet@1.0.2/dist/leaflet.css"),
+      shiny::tags$style(shiny::HTML('        
+                             html { height: 100% }
+                             body { height: 100%; margin: 0; padding: 0 }
+                             #map-canvas { height: 100%; width: 100% }'
+      )),
+      shiny::includeScript("inst/extdata/www/js/world.js"),  # geojson
+      shiny::tags$script(shiny::HTML(userJS)), #user data
+      shiny::tags$script(shiny::HTML(iso_type)) #Type of ISO code (character or numeric)
+      
+    ),		
+    shiny::tags$body(
+      shiny::tags$div(id = 'map-canvas'),
+      shiny::includeScript("inst/extdata/www/js/fishRmap.js")	# JavaScript specific to 		actionButton("getRversion", "R version API call"),
+      #		actionButton("errorFunction", "API call with error")
+    )
+  )
+  
+  server <- function(input, output, session) {
+    # include the API logic
+    ##Suppress for development
+    #		source("R/api.R", local = TRUE)$value
+    source("dev/dev/R/api.R", local = TRUE)$value
+    session$onSessionEnded(shiny::stopApp)
+  }
+  
+  shiny::shinyApp(ui = ui, server = server)	
+  
+  
+  
+  setwd(userwd)
   
 }
+
