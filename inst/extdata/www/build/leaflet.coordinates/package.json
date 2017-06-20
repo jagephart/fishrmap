@@ -1,0 +1,84 @@
+{
+  "_args": [
+    [
+      {
+        "raw": "leaflet.coordinates",
+        "scope": null,
+        "escapedName": "leaflet.coordinates",
+        "name": null,
+        "rawSpec": "leaflet.coordinates",
+        "spec": "C:\\Users\\Andrea\\Documents\\GitHub\\fishScarcity\\leaflet.coordinates",
+        "type": "directory"
+      },
+      "C:\\Users\\Andrea\\Documents\\GitHub\\fishScarcity"
+    ]
+  ],
+  "_from": "..\\..\\..\\Documents\\GitHub\\fishScarcity\\leaflet.coordinates",
+  "_inCache": true,
+  "_location": "/leaflet.coordinates",
+  "_phantomChildren": {},
+  "_requested": {
+    "raw": "leaflet.coordinates",
+    "scope": null,
+    "escapedName": "leaflet.coordinates",
+    "name": null,
+    "rawSpec": "leaflet.coordinates",
+    "spec": "C:\\Users\\Andrea\\Documents\\GitHub\\fishScarcity\\leaflet.coordinates",
+    "type": "directory"
+  },
+  "_requiredBy": [
+    "#USER"
+  ],
+  "_resolved": "file:..\\..\\..\\Documents\\GitHub\\fishScarcity\\leaflet.coordinates",
+  "_shasum": "9c8c154f1bef487e8dfa3fb5c368b9c7d80762b0",
+  "_shrinkwrap": null,
+  "_spec": "leaflet.coordinates",
+  "_where": "C:\\Users\\Andrea\\Documents\\GitHub\\fishScarcity",
+  "author": "Felix Bache",
+  "bugs": {
+    "url": "https://github.com/MrMufflon/Leaflet.Coordinates/issues"
+  },
+  "dependencies": {},
+  "description": "A Leaflet plugin to view coordinates",
+  "devDependencies": {
+    "grunt": "~0.4.1",
+    "grunt-contrib-clean": "~0.4.1",
+    "grunt-contrib-concat": "~0.3.0",
+    "grunt-contrib-connect": "~0.10",
+    "grunt-contrib-csslint": "~0.1.2",
+    "grunt-contrib-cssmin": "~0.6.1",
+    "grunt-contrib-jasmine": "~0.8",
+    "grunt-contrib-jshint": "~0.11.1",
+    "grunt-contrib-uglify": "~0.2.2",
+    "jasmine": "~2.0"
+  },
+  "homepage": "https://github.com/MrMufflon/Leaflet.Coordinates#readme",
+  "keywords": [
+    "gis",
+    "coordinates",
+    "leaflet",
+    "map",
+    "sdi"
+  ],
+  "licenses": [
+    {
+      "type": "CC BY 3",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    }
+  ],
+  "name": "leaflet.coordinates",
+  "optionalDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MrMufflon/Leaflet.Coordinates.git"
+  },
+  "version": "0.1.5",
+  "main": "Gruntfile.js",
+  "directories": {
+    "example": "examples"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "license": "ISC"
+}

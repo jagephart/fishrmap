@@ -1,0 +1,82 @@
+{
+  "_args": [
+    [
+      {
+        "raw": "leaflet.coordinates",
+        "scope": null,
+        "escapedName": "leaflet.coordinates",
+        "name": null,
+        "rawSpec": "leaflet.coordinates",
+        "spec": "C:\\Users\\Andrea\\Documents\\GitHub\\fishScarcity\\leaflet.coordinates",
+        "type": "directory"
+      },
+      "C:\\Users\\Andrea\\Documents\\GitHub\\fishScarcity"
+    ]
+  ],
+  "_from": "..\\..\\..\\Documents\\GitHub\\fishScarcity\\leaflet.coordinates",
+  "_id": "leaflet.coordinates@0.1.5",
+  "_inCache": true,
+  "_location": "/leaflet.coordinates",
+  "_phantomChildren": {},
+  "_requested": {
+    "raw": "leaflet.coordinates",
+    "scope": null,
+    "escapedName": "leaflet.coordinates",
+    "name": null,
+    "rawSpec": "leaflet.coordinates",
+    "spec": "C:\\Users\\Andrea\\Documents\\GitHub\\fishScarcity\\leaflet.coordinates",
+    "type": "directory"
+  },
+  "_requiredBy": [
+    "#USER"
+  ],
+  "_resolved": "file:..\\..\\..\\Documents\\GitHub\\fishScarcity\\leaflet.coordinates",
+  "_shasum": "9c8c154f1bef487e8dfa3fb5c368b9c7d80762b0",
+  "_shrinkwrap": null,
+  "_spec": "leaflet.coordinates",
+  "_where": "C:\\Users\\Andrea\\Documents\\GitHub\\fishScarcity",
+  "author": {
+    "name": "Felix Bache"
+  },
+  "bugs": {
+    "url": "https://github.com/MrMufflon/Leaflet.Coordinates/issues"
+  },
+  "dependencies": {},
+  "description": "A Leaflet plugin to view coordinates",
+  "devDependencies": {
+    "grunt": "~0.4.1",
+    "grunt-contrib-clean": "~0.4.1",
+    "grunt-contrib-concat": "~0.3.0",
+    "grunt-contrib-connect": "~0.10",
+    "grunt-contrib-csslint": "~0.1.2",
+    "grunt-contrib-cssmin": "~0.6.1",
+    "grunt-contrib-jasmine": "~0.8",
+    "grunt-contrib-jshint": "~0.11.1",
+    "grunt-contrib-uglify": "~0.2.2",
+    "jasmine": "~2.0"
+  },
+  "gitHead": "3b5c7d7af4f735c9bb2a925aa0c4a839f61bb470",
+  "homepage": "https://github.com/MrMufflon/Leaflet.Coordinates#readme",
+  "keywords": [
+    "gis",
+    "coordinates",
+    "leaflet",
+    "map",
+    "sdi"
+  ],
+  "licenses": [
+    {
+      "type": "CC BY 3",
+      "url": "http://creativecommons.org/licenses/by/3.0/"
+    }
+  ],
+  "name": "leaflet.coordinates",
+  "optionalDependencies": {},
+  "readme": "Leaflet.Coordinates\n===================\n\n### What is this?\nA [Leaflet](https://github.com/Leaflet/Leaflet) plugin to view mouse coordinates. Also the user can change the coordinates and get a marker on that position viewing the coordinates.\n\n*Tested with Leaflet 0.5+*\n\n<img src=\"http://mrmufflon.github.io/Leaflet.Coordinates/images/screen_1.png\"/>\n\n<img src=\"http://mrmufflon.github.io/Leaflet.Coordinates/images/screen_2.png\"/>\n\n### Demo anyone?\n[Have a look](http://mrmufflon.github.io/Leaflet.Coordinates/examples/demo.html)\n\n### How to use?\n```javascript\nL.control.coordinates({\n\tposition:\"bottomleft\", //optional default \"bootomright\"\n\tdecimals:2, //optional default 4\n\tdecimalSeperator:\".\", //optional default \".\"\n\tlabelTemplateLat:\"Latitude: {y}\", //optional default \"Lat: {y}\"\n\tlabelTemplateLng:\"Longitude: {x}\", //optional default \"Lng: {x}\"\n\tenableUserInput:true, //optional default true\n\tuseDMS:false, //optional default false\n\tuseLatLngOrder: true, //ordering of labels, default false-> lng-lat\n\tmarkerType: L.marker, //optional default L.marker\n\tmarkerProps: {}, //optional default {},\n\tlabelFormatterLng : funtion(lng){return lng+\" lng\"}, //optional default none,\n\tlabelFormatterLat : funtion(lat){return lat+\" lat\"}, //optional default none\n\tcustomLabelFcn: function(latLonObj, opts) { \"Geohash: \" + encodeGeoHash(latLonObj.lat, latLonObj.lng)} //optional default none\n}).addTo(map);\n```\n\n### Releases\n- [0.1.3](https://github.com/MrMufflon/Leaflet.Coordinates/tree/0.1.3)\n- [0.1.2](https://github.com/MrMufflon/Leaflet.Coordinates/tree/0.1.2)\n- [0.1.1](https://github.com/MrMufflon/Leaflet.Coordinates/tree/0.1.1)\n- [0.1.0](https://github.com/MrMufflon/Leaflet.Coordinates/tree/0.1.0)\n\n### License\n<a rel=\"license\" href=\"http://creativecommons.org/licenses/by/3.0/deed.en_US\"><img alt=\"Creative Commons License\" style=\"border-width:0\" src=\"http://i.creativecommons.org/l/by/3.0/88x31.png\" /></a><br />This work is licensed under a <a rel=\"license\" href=\"http://creativecommons.org/licenses/by/3.0/deed.en_US\">Creative Commons Attribution 3.0 Unported License</a>.\n",
+  "readmeFilename": "README.md",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MrMufflon/Leaflet.Coordinates.git"
+  },
+  "version": "0.1.5"
+}

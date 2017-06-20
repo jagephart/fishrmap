@@ -1,4 +1,4 @@
-//WHAT YOU NEED TO DO is: 
+ //WHAT YOU NEED TO DO is: 
 // 1. make sure that you're accounting for the CURRENT CENTER when you resize the svg
 // 2. select + transform the path? or just redraw? idk yet
 app = function() {
@@ -7,73 +7,9 @@ app = function() {
     
     init : function() {
 
-		if (typeof(Number.prototype.toRadians) === "undefined") {
-			Number.prototype.toRadians = function() {
-				return this * Math.PI / 180;
-			}
-		}
 
-		if (typeof(Number.prototype.toDegrees) === "undefined") {
-			Number.prototype.toDegrees = function() {
-				return this * 180 / Math.PI;
-			}
-		}
-		var arcLevel = 0;
-		var geoCArr = [];
-		//based on  http://www.movable-type.co.uk/scripts/latlong.html
-		function MidPoint(start, finish, type = "push", arcLimit = 10){
-			arcLevel += 1;
-			var lat1 = start[0]
-			var lon1 = start[1]
-			var lat2 = finish[0]; 
-			var lon2 = finish[1]
-			//console.log(d3.geo.interpolate(thisCoord, thatCoord))
-			var R = 6371e3; // meters
-			var φ1 = lat1.toRadians();
-			var φ2 = lat2.toRadians();
-			var λ1 = lon1.toRadians();
-			var λ2 = lon2.toRadians();
-			var Δφ = (lat2-lat1).toRadians();
-			var Δλ = (lon2-lon1).toRadians();
-			var Bx = Math.cos(φ2) * Math.cos(λ2-λ1);
-			var By = Math.cos(φ2) * Math.sin(λ2-λ1);
-			var φ3 = Math.atan2(
-				Math.sin(φ1) + Math.sin(φ2),
-				Math.sqrt( (Math.cos(φ1)+Bx)*(Math.cos(φ1)+Bx) + By*By ) 
-			);
-			var λ3 = λ1 + Math.atan2(By, Math.cos(φ1) + Bx);
-
-			var a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-							Math.cos(φ1) * Math.cos(φ2) *
-							Math.sin(Δλ/2) * Math.sin(Δλ/2);
-			var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-
-			var d = R * c;
-			if(arcLevel < arcLimit){
-			 if(arcLevel > 1){
-				if(type == "push"){
-					geoCArr.push([φ3.toDegrees(), λ3.toDegrees()], finish) 
-					MidPoint([φ3.toDegrees(), λ3.toDegrees()], finish, type = "push")
-				} else {	
-					geoCArr.unshift([φ3.toDegrees(), λ3.toDegrees()])
-					MidPoint(start, [φ3.toDegrees(), λ3.toDegrees()], type = "unshift")
-				}
-				//				return([φ3.toDegrees(), λ3.toDegrees()])
-			 } else {
-				geoCArr.push([φ3.toDegrees(), λ3.toDegrees()])							 
-//				console.log([start,finish])
-				MidPoint([φ3.toDegrees(), λ3.toDegrees()], finish, type = "push")
-
-				arcLevel = 1;
-//				console.log([start,finish])
-				MidPoint(start, [φ3.toDegrees(), λ3.toDegrees()], type = "unshift")
-//				return([φ3.toDegrees(), λ3.toDegrees()])
-			 }
-			} //else {
-//				return([φ3.toDegrees(), λ3.toDegrees()])							
-//			}
-		}
-
+			//Read geoJSON
+		d3.json('shared/fishRmap/ajax/world.geojson', function(err, world) {
 		
 		//empty string to be populated later
 			var selectedISO;
@@ -124,96 +60,78 @@ app = function() {
 			var iso_id = 	'';
 			var arcs = {};
 
-			var projection = d3.geo.equirectangular()
+			var projection = d3.geoEquirectangular()
 				.rotate([0, 0, 89])
 //				.translate([width / 2, height / 2])
 				.scale(85)
 				.precision(0);
 
-			var path = d3.geo.path()
+			var path = d3.geoPath()
 				.projection(projection);
 
-			var graticule = d3.geo.graticule();
+			var graticule = d3.geoGraticule();		
 
-//			var arcs = {type: "MultiLineString", coordinates: []};
-
-/*
-    // we will be appending the SVG to the Leaflet map pane
-    // g (group) element will be inside the svg 
-    var svg = d3.select(map.getPanes().overlayPane).append("svg");
-
-    // if you don't include the leaflet-zoom-hide when a 
-    // user zooms in or out you will still see the phantom
-    // original SVG 
-    var g = svg.append("g").attr("class", "leaflet-zoom-hide");
+			var linesOverlay = L.d3SvgOverlay(function(sel, proj) {
+				var upd = sel.selectAll('path').data(selJson.features);
+//				var upd = sel.data(sArr);
+				//console.log([upd, proj, mArr]);
+				
+				upd
+				.enter()
+					.append('path')
+						.attr('id', function(d){console.log(d);  return 'c'+d.properties.s.data[0].egeoloc+'to'+d.properties.s.state})
+						.attr('d', function(d){
+							//console.log(proj.pathFromGeojson(d))
+							return proj.pathFromGeojson(d)})
+//						.attr('d', d3.geoPath())
+						.attr('stroke', 'black')
+						.attr('class', 'travelLine')
+							.attr('stroke-opacity', '0.65')
+/* This is actually kind of a neat effect, but we'll drop it for now
+						.attr('fill', '#88adea')
+						.attr('fill-opacity', '0.35')
 */
-var linePathGenerator = d3.svg.line()
-    .x(function(d) { return d.x; })
-    .y(function(d) { return d.y; })
-    .interpolate("linear");
-		
+						.attr('fill-opacity', '0')
+						.attr('stroke-width', function(d) {
+//					console.log(d); 
+					return 3*d.properties.stroke / proj.scale 
+				})
+					;
+					
+					
+				upd.enter().append('circle')						
+				.attr('id', function(d){console.log(d);  return 'marker'+d.properties.s.data[0].egeoloc+'to'+d.properties.s.state})
+				.attr("r", 7 / proj.scale)
+				.attr("transform", function(d){
+					console.log(proj)
+					console.log(proj.stream)
+					var point = proj.latLngToLayerPoint([d.properties.s.source[1], d.properties.s.source[0]])
+//					var point = proj.latLngToLayerPoint(d.geometry.coordinates[0])
+//					var point = proj.pathFromGeojson(d).split('L')[0].split('M')[1].split(',')
+					console.log(point)
+//					console.log(d3.geoTransform().stream.point(parseFloat(point.x),parseFloat(point.y)))
+					return 'translate('+ point.x + ',' + point.y +')'
+					//return 'translate('+ (point.x / (10*proj.scale)) +',' + (point.y / (100*proj.scale)) +')'
 
-			var arcsOverlay = L.d3SvgOverlay(function(sel, proj) {
-				var upd = sel.selectAll('path')
-					.data([arcs]);
+				})
 
-				console.log([sel, proj, upd])
-					upd
-					.enter()
-						.append('path')
-							.attr('d', proj.pathFromGeojson)
-							.attr('stroke', 'black')
-							.attr('fill', 'none')
-							.attr('class', 'arc')
-						;
-					upd.attr('stroke-width', 1 / proj.scale);
+				//transition(upd);
+
+/*				upd.attr('stroke-width', function(d) {
+					console.log(d); 
+					return d.properties.stroke / proj.scale 
 				});
+*/
+//				upd.attr('stroke-width', function() {return(Math.random() * 20 / proj.scale)});
+			});
 
-				/*
-//Still need to make it a d3SvgOverlay for the sake of projection	- at this stage (and maybe any stage) we're not using this or showArcs
-			function addArcs(thisISO){
-				var svg = d3.select("#map-canvas > div.leaflet-pane.leaflet-map-pane > div.leaflet-pane.leaflet-overlay-pane > svg:nth-child(3)")	
-				var g = svg.append('g').attr("class", "d3-overlay").attr("id", "arcs" + thisISO)
-				console.log(g);
-				var addThis = L.d3SvgOverlay(function(sel, proj) {
-					var upd = g.selectAll('path')
-						.data([arcs]);
-						
-					upd
-					.enter()
-						.append('path')
-							.attr('d', proj.pathFromGeojson)
-	//							.transition(t)
-							.attr('class', 'arc')
-							.attr('stroke', 'black')
-	//						.attr('fill', function(){ return d3.hsl(Math.random() * 360, 0.9, 0.5) })
-	//						.attr('fill-opacity', '0.5')
-	//						.on('click', function(d){drawCountries(d)})
-						;
-	//				}
-	//					upd.transition(t).attr('stroke-width', 1 / proj.scale);
-					upd.attr('stroke-width', 1 / proj.scale);
-				});
-				console.log(addThis);
-			}
 
-			function showArcs(thisISO){
-				var svg = d3.select("#map-canvas > div.leaflet-pane.leaflet-map-pane > div.leaflet-pane.leaflet-overlay-pane > svg:nth-child(3)")	
-				var g =	svg.select("#arcs" + thisISO)
-				console.log(g)
-				var showThis = L.d3SvgOverlay(function(sel, proj) {
-					var upd =	g.selectAll("path");					
-					upd.transition(t).attr('stroke-width', 1 / proj.scale)
-				});
-				console.log(showThis);
-			}
-*/			
 			function whenClicked(e){
 				console.log(e);
 				selectedISO = e;
 
 //				Hide old arcs				
-			map.removeLayer(arcsOverlay);
+			map.removeLayer(linesOverlay);
 // 		set id of new arcs (must be done after hiding
 				iso_id = e.target.feature.properties[iso];			
 				
@@ -238,7 +156,6 @@ var linePathGenerator = d3.svg.line()
 						geoCArr = [];
 						arcLevel = 0;
 						//arcs.coordinates.push([thisCoord, thatCoord])
-						MidPoint(thisCoord, thatCoord)
 						
 						arcs.features.push({
 							"type" : "feature", 
@@ -250,7 +167,7 @@ var linePathGenerator = d3.svg.line()
 					}
 				})
 				console.log(arcs)
-				arcsOverlay.addTo(map);			
+				linesOverlay.addTo(map);			
 			}
 			
 			function onEachFeature(feature, layer) {
@@ -261,13 +178,79 @@ var linePathGenerator = d3.svg.line()
 			}
 
 			
-			L.control.layers({"Geo Tiles": tiles}, {"Countries": countriesOverlay, "Trade links": arcsOverlay}).addTo(map);
+			L.control.layers({"Geo Tiles": tiles}, {"Countries": countriesOverlay, "Trade links": linesOverlay}).addTo(map);
 
 			countries = world.features; 
 			countriesOverlay.addTo(map);			
 			L.geoJSON(world, {onEachFeature: onEachFeature, opacity: 0, fillOpacity: 0}).addTo(map);
-			arcsOverlay.addTo(map);			
+			linesOverlay.addTo(map);		
 
+						//Now we add the animation
+						
+						var paths = d3.selectAll('.travelLine').each(function(ln){
+							var pathid = "#c"+ln.properties.s.data[0].egeoloc+'to'+ln.properties.s.state;
+							var mrkrid = "#marker"+ln.properties.s.data[0].egeoloc+'to'+ln.properties.s.state;
+							console.log(pathid)
+						//console.log(paths)
+					  var path = d3.select(pathid);
+						
+ 					  var startPoint = pathStartPoint(path);
+					  
+					  console.log(startPoint)
+					  
+					  var marker = d3.select(mrkrid);
+					  marker.attr("r", function(d){
+					  	console.log(d)
+					  	return 1+3*d.properties.stroke
+					  	})
+					    .attr("transform", "translate(" + startPoint[0] + ")");
+					
+					  ptransition();
+
+					  //Get path start point for placing marker
+					  function pathStartPoint(path) {
+							console.log(path)
+					    var d = path.attr("d"),
+					    dsplitted = d.split("M");
+					    return dsplitted[1].split(",");
+					  }
+					
+					  function ctransition() {
+					    marker.transition()
+					        .duration(3500)
+					        .attrTween("transform", translateAlong(path.node()))
+					        .on("end", ctransition);// infinite loop
+					  }
+
+					  function translateAlong(path) {
+					    var l = path.getTotalLength();
+					    return function(i) {
+					      return function(t) {
+					        var p = path.getPointAtLength(t * l);
+					        return "translate(" + p.x + "," + p.y + ")";//Move marker
+					      }
+					    }
+					  }
+										  
+					  function ptransition() {
+					    path.transition()
+					        .duration(3500)
+					        .attrTween("stroke-dasharray", tweenDash)
+					        .on("end", ptransition); // infinite loop
+					  }
+					
+					  function tweenDash() {
+					    var l = path.node().getTotalLength();
+					    var i = d3.interpolateString("0," + l, l + "," + l); // interpolation of stroke-dasharray style attr
+					    return function(t) {
+//					      var marker = d3.select("#marker");
+					      var p = path.node().getPointAtLength(t * l);
+					      marker.attr("transform", "translate(" + p.x + "," + p.y + ")");//move marker
+					      return i(t);
+					    }
+					  }
+
+					});//transition(d)})					
 			
 /*
 			var years = _.uniq(_.pluck(userdata, 'yrs')).sort();
@@ -384,6 +367,7 @@ var linePathGenerator = d3.svg.line()
 			L.geoJSON(world, {onEachFeature: onEachFeature}).addTo(map);
 */	
 
+	});
 		}
 	}
 }();

@@ -15,14 +15,82 @@
 #' @examples 
 #' someExample <- 'goes here' 
 
+fishUp <- function(fishrDir, sroot){
+  #fishrDir <- "c:/users/andrea/documents/github/fishrmap"
+  dir.create(sroot, showWarnings = FALSE)
+  
+  sdFiles <- list.files(sroot);
+
+  froot <- paste0(fishrDir, '/inst/extdata/www');
+  
+  if(length(sdFiles) == 0){
+      file.copy(
+        from=froot, to=sroot, 
+        overwrite = TRUE, 
+        recursive = TRUE, 
+        copy.mode = TRUE
+      )
+    } else {
+#    saveRDS(Sys.time(),compress = FALSE)
+    
+    fdFiles <- list.files(froot);
+    #fdFiles <- paste0(wroot, list.files(wroot));
+    
+    silencio <- lapply(fdFiles, function(fl){
+      fp <- paste0(froot, '/', fl);
+      sp <- paste0(sroot, '/', fl);
+
+      dir.create(sp, showWarnings = FALSE)
+      
+      fls <- paste0(fp, '/', list.files(fp));
+      sls <- paste0(sp, '/', list.files(sp));
+      
+      if(
+        any(
+          !(fls %in% sls)
+        )
+      ){
+        file.copy(
+          from=fp, to=sroot, 
+          overwrite = TRUE, 
+          recursive = TRUE, 
+          copy.mode = TRUE
+        )
+      } else {
+      
+      if(
+        any(
+          file.mtime(fls) > max(file.mtime(sls))
+        )
+      ){
+        file.copy(
+          from=fp, to=sroot, 
+          overwrite = TRUE, 
+          recursive = TRUE, 
+          copy.mode = TRUE
+        )
+      }
+    }
+    return('');
+      
+      #      print(fls);
+    })
+  }
+    #ajax <- paste0(fdFiles[1], '/', list.files(fdFiles[1]))
+    #js <- paste0(fdFiles[2], '/', list.files(fdFiles[2]))
+    
+  return('');
+}
+
 fishRmap <- function(userdata, import = 'Import', export = 'Export', species = 'Species', value = 'value', year = 'Year', iso = 'numeric'){
   requireNamespace('shiny', quietly = TRUE)
   requireNamespace('jsonlite', quietly = TRUE)
   requireNamespace('data.table', quietly = TRUE)
   
+  
   #Test datasets
   # userdata <- 'c:/users/andrea/documents/fishdata.txt'
-  # userdata <- 'c:/users/andrea/documents/github/fishrmap/dev/data/species_trade.txt'
+  # userdata <- 'c:/users/andrea/documents/github/fishrmap/inst/rawdata/species_trade.txt'
   
   if (class(userdata) == 'character'){
     if (substr(userdata, nchar(userdata), nchar(userdata)) == '/'){
@@ -47,6 +115,12 @@ fishRmap <- function(userdata, import = 'Import', export = 'Export', species = '
   
   ##For testing: 
   mapPath <- 'c:/users/andrea/documents/github/fishrmap';
+  
+  servPath <- paste0(path.package('shiny'), '/www/shared/fishRmap');
+  
+  
+  fishUp(mapPath, sroot = servPath);
+
   import = 'Import'; export = 'Export'; species = 'Species'; value = 'value'; year = 'Year'; iso = 'numeric'
   ##end testing stuff
   
@@ -72,14 +146,14 @@ fishRmap <- function(userdata, import = 'Import', export = 'Export', species = '
   
   
   userwd <- getwd()
-  setwd(mapPath)
+#  setwd(mapPath)
   
   #	userJSON <- jsonlite::toJSON(uDT)
   #	writeLines( userJSON, 'inst/extdata/www/ajax/userdata.json')
   #	writeLines(paste0('var userdata = ', userJSON), 'inst/extdata/www/ajax/userdata.js')
   #wrldJS <- paste0('var userdata = ',  readLines('inst/extdata/www/ajax/world.json'))
   
-  userJS <- paste0('var userdata = ',  jsonlite::toJSON(uDT))
+  writeLines(jsonlite::toJSON(uDT), paste0(servPath, '/ajax/userdata.json'))
   
   iso_type <- ifelse(
     tolower(iso) == 'numeric', 
@@ -91,29 +165,48 @@ fishRmap <- function(userdata, import = 'Import', export = 'Export', species = '
   
   ui <- shiny::bootstrapPage(
     shiny::tags$head(
-      shiny::includeScript("inst/extdata/www/js/api.js"),  # Always include this file this app
-      shiny::tags$script(src="https://unpkg.com/leaflet@1.0.2/dist/leaflet.js"), #Leaflet JS
-#      shiny::tags$script(src="https://d3js.org/d3.v4.js"), #D3.js
-      shiny::tags$script(src="https://d3js.org/d3.v3.js"), #D3.js
-      shiny::tags$script(src="https://d3js.org/topojson.v1.min.js"), #D3 topojson
-#      shiny::tags$script(src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.4.9/d3.min.js"),
-      shiny::includeScript("inst/extdata/www/js/L.D3SvgOverlay.min.js"), #D3-leaflet integration plugin
-      shiny::includeScript("inst/extdata/www/js/underscore-min.js"),  # Really helpful obj/arr utilities
-      shiny::tags$link(rel = "stylesheet", type = "text/css", href = "https://unpkg.com/leaflet@1.0.2/dist/leaflet.css"),
-      shiny::tags$link(rel = "stylesheet", type = "text/css", href = "https://unpkg.com/leaflet@1.0.2/dist/leaflet.css"),
-      shiny::tags$style(shiny::HTML('        
-                             html { height: 100% }
-                             body { height: 100%; margin: 0; padding: 0 }
-                             #map-canvas { height: 100%; width: 100% }'
-      )),
-      shiny::includeScript("inst/extdata/www/js/world.js"),  # geojson
-      shiny::tags$script(shiny::HTML(userJS)), #user data
+      shiny::tags$script(src="shared/fishRmap/js/api.js"),  # Always include this file this app
+
+      # Leaflet stuff      
+      shiny::tags$script(src="shared/fishRmap/build/leaflet/dist/leaflet.js"),
+      shiny::tags$script(src="shared/fishRmap/build/Leaflet.Coordinates/dist/Leaflet.Coordinates-0.1.5.min.js"),
+      shiny::tags$script(src="shared/fishRmap/build/leaflet/dist/leaflet.js"),
+      shiny::tags$script(src="shared/fishRmap/build/Leaflet.Coordinates/dist/Leaflet.Coordinates-0.1.5.min.js"),
+      shiny::tags$link(rel = "stylesheet", type = "text/css", href = "shared/fishRmap/build/Leaflet.Coordinates/dist/Leaflet.Coordinates-0.1.5.css"),
+      
+      # D3 stuff
+      shiny::tags$script(src="shared/fishRmap/build/d3/build/d3.min.js"),
+      shiny::tags$script(src="shared/fishRmap/build/d3/node_modules/d3-scale/build/d3-scale.min.js"),
+      shiny::tags$script(src="shared/fishRmap/build/d3/node_modules/d3-geo/build/d3-geo.min.js"),
+      shiny::tags$script(src="shared/fishRmap/build/topojson/dist/topojson.min.js"),
+      shiny::tags$script(src="shared/fishRmap/build/d3/node_modules/d3-color/build/d3-color.min.js"),
+      shiny::tags$script(src="shared/fishRmap/build/d3/node_modules/d3-dispatch/build/d3-dispatch.min.js"),
+      shiny::tags$script(src="shared/fishRmap/build/d3/node_modules/d3-ease/build/d3-ease.min.js"),
+      shiny::tags$script(src="shared/fishRmap/build/d3/node_modules/d3-interpolate/build/d3-interpolate.min.js"),
+      shiny::tags$script(src="shared/fishRmap/build/d3/node_modules/d3-selection/build/d3-selection.min.js"),
+      shiny::tags$script(src="shared/fishRmap/build/d3/node_modules/d3-timer/build/d3-timer.min.js"),
+      shiny::tags$script(src="shared/fishRmap/build/d3/node_modules/d3-transition/build/d3-transition.min.js"),
+      
+      # Underscore
+      shiny::tags$script(src="shared/fishRmap/build/underscore-min.js"),
+      
+      # Homebrew mod for D3 svg overlay interaction with leaflet
+      shiny::tags$script(src="shared/fishRmap/build/L.D3SvgOverlay.v4.min.js"),
+      
+      
+      # Custom CSS
+      shiny::tags$link(rel = "stylesheet", type = "text/css", href = "shared/fishRmap/js/fishRstyle.css"),
+
+      # This is handled in JS                         
+#      shiny::includeScript("inst/extdata/www/js/world.js"),  # geojson
+
       shiny::tags$script(shiny::HTML(iso_type)) #Type of ISO code (character or numeric)
       
     ),		
     shiny::tags$body(
       shiny::tags$div(id = 'map-canvas'),
-      shiny::includeScript("inst/extdata/www/js/fishRmap.js")	# JavaScript specific to 		actionButton("getRversion", "R version API call"),
+      shiny::tags$script(src="shared/fishRmap/js/fishRmap.js")
+#      shiny::includeScript("inst/extdata/www/js/fishRmap.js")	# JavaScript specific to 		actionButton("getRversion", "R version API call"),
       #		actionButton("errorFunction", "API call with error")
     )
   )
@@ -122,7 +215,7 @@ fishRmap <- function(userdata, import = 'Import', export = 'Export', species = '
     # include the API logic
     ##Suppress for development
     #		source("R/api.R", local = TRUE)$value
-    source("dev/dev/R/api.R", local = TRUE)$value
+    source(paste0(mapPath, "/R/api.R"), local = TRUE)$value
     session$onSessionEnded(shiny::stopApp)
   }
   
@@ -130,7 +223,7 @@ fishRmap <- function(userdata, import = 'Import', export = 'Export', species = '
   
   
   
-  setwd(userwd)
+#  setwd(userwd)
   
 }
 
