@@ -7,6 +7,8 @@ app = function() {
     
     init : function() {
 
+			//Read user data
+		d3.json('shared/fishRmap/ajax/userdata.json', function(err, userdata) {
 
 			//Read geoJSON
 		d3.json('shared/fishRmap/ajax/world.geojson', function(err, world) {
@@ -30,6 +32,20 @@ L.TopoJSON = L.GeoJSON.extend({
 						} else {baddies.push(d.id)}
 					}
         })
+        L.GeoJSON.prototype.addData.call(this, newjson);
+      }
+    }    
+    else {
+ //     console.log(jsonData);
+      if(baddies.indexOf(jsonData.id)==-1){
+      	L.GeoJSON.prototype.addData.call(this, jsonData);
+      }
+    }
+  }  
+});
+
+var topoLayer = new L.TopoJSON();
+
 
 	
 		//empty string to be populated later
@@ -273,8 +289,9 @@ L.TopoJSON = L.GeoJSON.extend({
 					  }
 
 					});//transition(d)})					
-			
-	});
+				
+				});			
+			});
 		}
 	}
 }();
