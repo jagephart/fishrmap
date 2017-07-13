@@ -1,51 +1,166 @@
+var testmeta = [];
+
  //WHAT YOU NEED TO DO is: 
 // 1. make sure that you're accounting for the CURRENT CENTER when you resize the svg
 // 2. select + transform the path? or just redraw? idk yet
+
+//MUST UNSUPPRESS FOR DEPLOYMENT
+/*
 app = function() {
   
   return {
     
     init : function() {
+*/
+
+
+			var selJson;
 
 			//Read user data
-		d3.json('shared/fishRmap/ajax/userdata.json', function(err, userdata) {
+			//MUST USE shared/fishRmap version for deployment!!!!
+//		d3.json('shared/fishRmap/ajax/userdata.json', function(err, userdata) {
+		d3.json('ajax/userdata.json', function(err, userdata) {
 
-			//Read geoJSON
-		d3.json('shared/fishRmap/ajax/world.geojson', function(err, world) {
-	
+			//Read topojson
+			//MUST USE shared/fishRmap version for deployment!!!!
+//		d3.json('shared/fishRmap/ajax/world.json', function(err, world) {
+		d3.json('ajax/world.json', function(err, world) {
+		
+			//Read metadata dict with IDs for different types of identifier
+			//MUST USE shared/fishRmap version for deployment!!!!
+//		d3.json('shared/fishRmap/ajax/userdata.json', function(err, userdata) {
+		d3.json('ajax/worldmeta.json', function(err, meta) {
+		console.log(meta)
+		
+		//Should remove this when you can 
+		meta.forEach(function(m){testmeta.push(m)})
+		
 // Extend geojson to accomodate topojson--will be more efficient
 //via http://blog.webkid.io/maps-with-leaflet-and-topojson/
-var baddies = [];
 L.TopoJSON = L.GeoJSON.extend({  
   addData: function(jsonData) {    
     if (jsonData.type === "Topology") {
       for (key in jsonData.objects) {
         geojson = topojson.feature(jsonData, jsonData.objects[key]);
-        var newjson = {type:geojson.type, features:[]}
-        geojson.features.forEach(function(d){
-					var locN = 'c'+d.id
-					if(typeof msaTags[locN] != 'undefined'){
-						if (locN.length == 6){newjson.features.push(d);} else {baddies.push(d.id)}
-					}	else {
-						if(typeof stateTags[locN] != 'undefined'){
-							if (locN.length == 3 || locN.length == 2){newjson.features.push(d);} else {baddies.push(d.id)}
-						} else {baddies.push(d.id)}
-					}
-        })
-        L.GeoJSON.prototype.addData.call(this, newjson);
+//				console.log('Adding geojson feature');
+//				console.log(geojson);
+        L.GeoJSON.prototype.addData.call(this, geojson);
       }
-    }    
+    }
     else {
- //     console.log(jsonData);
-      if(baddies.indexOf(jsonData.id)==-1){
-      	L.GeoJSON.prototype.addData.call(this, jsonData);
-      }
+//				console.log('Adding jsonData');
+//				console.log(jsonData);
+      L.GeoJSON.prototype.addData.call(this, jsonData);
     }
   }  
 });
+//			var worldL = new L.TopoJSON(world);
+			
+			
+//More general conversion of a given TopoJSON to GeoJSON for arcs
+          var convertTopojsonToGeojson = function(topojsonString) {
+              try {
+                  var parsedTopojson = topojsonString;
+                  var geJSONobj = new GeoJSON();
+                  //iterate over each key in the objects of the topojson
+                  for (var col in parsedTopojson.objects) {
+                      if (parsedTopojson.objects.hasOwnProperty(col)) {
+                          var gJ = topojson.feature(parsedTopojson, parsedTopojson.objects[col]);
+                          //merge with the existing GeoJSON Object
+                          geJSONobj.merge(gJ);
+                      }
+                  }
+                  //get the complete GeoJSON data
+                  var geojson = geJSONobj.getData();
+                  //Write it to the geojson text box
+                  return geojson;
+              } catch (error) {
+//                  displayError('There was an unknown error converting your TopoJSON to GeoJSON. Sorry.');
+                  console.log(error, error.message);
+              }
+          };
 
-var topoLayer = new L.TopoJSON();
-
+         //function for building GeoJSON:
+          function GeoJSON() {
+              var data;
+              this.merge = function(input) {
+                  if (this.data == null) {
+                      this.data = input;
+                      return;
+                  }
+                  //Data already exists, we need to look at the type
+                  var type = this.data.type;
+                  switch (type) {
+                      case "FeatureCollection":
+                          //Featurecollection already exists. We just need to add the Features from the input
+                          // to the data's Features
+                          this.data.features = this.data.features.concat(this.getFeatures(input));
+                          break;
+                      case "Feature":
+                          // we need to create a new FeatureCollection & then concatenate the input
+                          var ob = {
+                              "type": "FeatureCollection",
+                              "features": [this.data]
+                          };
+                          //now set the data to this new FeatureCollection
+                          this.data = ob;
+                          this.data.features = this.data.features.concat(this.getFeatures(input));
+                          break;
+                          //For the 7 types of Geometry objects, We need to make the FeatureCollection & then concatenate
+                      case "Point":
+                      case "MultiPoint":
+                      case "LineString":
+                      case "MultiLineString":
+                      case "Polygon":
+                      case "MultiPolygon":
+                      case "GeometryCollection":
+                          var ob = {
+                              "type": "FeatureCollection",
+                              "features": this.getFeatures(this.data)
+                          };
+                          this.data = ob;
+                          this.data.features = this.data.features.concat(this.getFeatures(input));
+                          break;
+                      default:
+                          //UnExpected data type
+                          throw "UnExpected data type";
+                  }
+              };
+              this.getFeatures = function(geoJSON) {
+                  var type = geoJSON.type;
+                  switch (type) {
+                      case "FeatureCollection":
+                          return geoJSON.features;
+                      case "Feature":
+                          return [geoJSON];
+                          //For the 7 types of Geometry objects, just fall through to makeFeaturesArray object
+                      case "Point":
+                      case "MultiPoint":
+                      case "LineString":
+                      case "MultiLineString":
+                      case "Polygon":
+                      case "MultiPolygon":
+                      case "GeometryCollection":
+                          return this.makeFeaturesArray(geoJSON);
+                      default:
+                          //UnExpected Input; Return Empty Array
+                          return [];
+                  }
+              };
+              this.makeFeaturesArray = function(geom) {
+                  var feature = {
+                      "type": "Feature",
+                      "geometry": geom //Note: There can't be properties.
+                  };
+                  return [feature];
+              };
+              this.getData = function() {
+                  return this.data;
+              };
+          }					
+					
+			console.log(convertTopojsonToGeojson(world));
+			var newworld = convertTopojsonToGeojson(world);
 
 	
 		//empty string to be populated later
@@ -72,7 +187,9 @@ var topoLayer = new L.TopoJSON();
 				.duration(350);
 
 
-			var countries = [];
+//			var countries = [];
+			var countries = newworld.features; 
+
 			var countriesOverlay = L.d3SvgOverlay(function(sel, proj) {
 //				function drawCountries(d){
 //					console.log(d);
@@ -171,37 +288,54 @@ var topoLayer = new L.TopoJSON();
 //				Hide old arcs				
 			map.removeLayer(linesOverlay);
 // 		set id of new arcs (must be done after hiding
-				iso_id = e.target.feature.properties[iso];			
+//				iso_id = e.target.feature.properties[iso];			
+				iso_id = _.where(meta, {'id': parseFloat(e.target.feature.id)})[0];			
 				
+//				console.log(e.target);
+//				console.log(iso_id);
+//				console.log(userdata);
+				console.log([e.target.feature.id, iso_id[iso],iso_id])
 
-				var imports = _.where(userdata, {imp: parseFloat(iso_id)});
-				var exports = _.where(userdata, {exp: parseFloat(iso_id)});
-				
+				var imports = _.where(userdata, {imp: parseFloat(iso_id[iso])});
+				var exports = _.where(userdata, {exp: parseFloat(iso_id[iso])});
+			
+				//Pick up the imports of selected country
 				var sources = _.uniq(_.pluck(imports, 'exp'));
+
+				//Pick up the exports of selected country
 				var targets = _.uniq(_.pluck(exports, 'imp'));
 
 				var thisCoord = e.target.feature.geometry.coordinates[0][0][0];
 				console.log(thisCoord)
 				//arcs = {type: "MultiLineString", coordinates: []};
 				arcs = {type: "FeatureCollection", "features": []};
+//				console.log(sources)
+			
 				sources.forEach(function(d){
-					var thisArc = _.find(world.features, function(feat){
-						return feat.properties[iso] == d;
-					})
-					
-					if (typeof thisArc != 'undefined') {
-						var thatCoord = thisArc.geometry.coordinates[0][0][0];
-						geoCArr = [];
-						arcLevel = 0;
-						//arcs.coordinates.push([thisCoord, thatCoord])
-						
-						arcs.features.push({
-							"type" : "feature", 
-							"geometry" : {
-								"type" : "LineString", 
-								"coordinates":	[thisCoord].concat(geoCArr).concat([thatCoord])
-							}
-						})
+					var thisID = _.filter(meta, function(m){return m[iso] == d})[0];
+					if (typeof thisID != 'undefined') {
+//					console.log([thisID,thisID.id]);
+					var thisArc = _.find(newworld.features, function(feat){
+//						console.log([feat.properties.id, thisID.id])
+						return feat.id ==  thisID.id
+					});
+						if (typeof thisArc != 'undefined') {
+							console.log(thisArc)
+								var thatCoord = thisArc.geometry.coordinates[0][0][0];
+								geoCArr = [];
+								arcLevel = 0;
+								//arcs.coordinates.push([thisCoord, thatCoord])
+								
+								arcs.features.push({
+									"type" : "feature", 
+									"geometry" : {
+										"type" : "LineString", 
+										"coordinates":	[thisCoord].concat(geoCArr).concat([thatCoord])
+									}
+								})
+						}
+					} else {
+						console.log('Source not found in geographic data: '+d)
 					}
 				})
 				console.log(arcs)
@@ -215,12 +349,17 @@ var topoLayer = new L.TopoJSON();
 				});
 			}
 
+			var worldUnderlay = new L.TopoJSON(world, {onEachFeature: onEachFeature, opacity: 0.5, fillOpacity: 0.5}).addTo(map);
 			
-			L.control.layers({"Geo Tiles": tiles}, {"Countries": countriesOverlay, "Trade links": linesOverlay}).addTo(map);
+			L.control.layers({"Geo Tiles": tiles}, {
+				//	"Countries": countriesOverlay, 
+					"Countries": worldUnderlay, 
+					"Trade links": linesOverlay
+				}).addTo(map);
 
-			countries = world.features; 
-			countriesOverlay.addTo(map);			
-			L.geoJSON(world, {onEachFeature: onEachFeature, opacity: 0, fillOpacity: 0}).addTo(map);
+//			countries = world.features; 
+//			countriesOverlay.addTo(map);			
+			worldUnderlay.addTo(map);
 			linesOverlay.addTo(map);		
 
 						//Now we add the animation
@@ -292,8 +431,12 @@ var topoLayer = new L.TopoJSON();
 				
 				});			
 			});
+			});
+
+//MUST UNSUPPRESS FOR DEPLOYMENT
+/*
 		}
 	}
 }();
-
 $(function () { app.init(); });
+*/
