@@ -1,5 +1,5 @@
 var testmeta = [];
-
+//TODO: Add slide-in dashboard, figure out why all paths come from a single point for some countries (e.g., brazil) but not others (e.g., bolivia)
 //MUST UNSUPPRESS FOR DEPLOYMENT
 /*
 app = function() {
@@ -11,12 +11,22 @@ app = function() {
 
 
 			var selJson;
+			
+			var userdata = [];
 
 			//Read user data
 			//MUST USE shared/fishRmap version for deployment!!!!
 //		d3.json('shared/fishRmap/ajax/userdata.json', function(err, userdata) {
-		d3.json('shared/fishRmap/ajax/userdata.json', function(err, userdata) {
-
+	function getUserdata(){
+		d3.json('shared/fishRmap/ajax/userdata.json', function(err, data) {
+			data.forEach(function(d){
+				userdata.push(d)				
+			})
+		})
+	}
+	//do this asynchronously -- we won't need until click event
+	getUserdata();
+	
 			//Read topojson
 			//MUST USE shared/fishRmap version for deployment!!!!
 //		d3.json('shared/fishRmap/ajax/world.json', function(err, world) {
@@ -44,8 +54,6 @@ L.TopoJSON = L.GeoJSON.extend({
       }
     }
     else {
-//				console.log('Adding jsonData');
-//				console.log(jsonData);
       L.GeoJSON.prototype.addData.call(this, jsonData);
     }
   }  
@@ -231,9 +239,8 @@ L.TopoJSON = L.GeoJSON.extend({
 				upd
 				.enter()
 					.append('path')
-						.attr('id', function(d){console.log(d);  return 'c'+d.properties.s})
+						.attr('id', function(d){return 'c'+d.properties.s})
 						.attr('d', function(d){
-							console.log([d,proj.pathFromGeojson(d)])
 							return proj.pathFromGeojson(d)})
 //						.attr('d', d3.geoPath())
 						.attr('stroke', 'black')
@@ -251,16 +258,12 @@ L.TopoJSON = L.GeoJSON.extend({
 					
 					
 				upd.enter().append('circle')						
-				.attr('id', function(d){console.log(d);  return 'marker'+d.properties.s})
+				.attr('id', function(d){return 'marker'+d.properties.s})
 				.attr("r", 7 / proj.scale)
 				.attr("transform", function(d){
-					console.log(proj)
-					console.log(d)
-					console.log(proj.stream)
 					var point = proj.latLngToLayerPoint(d.geometry.coordinates[0])
 //					var point = proj.latLngToLayerPoint(d.geometry.coordinates[0])
 //					var point = proj.pathFromGeojson(d).split('L')[0].split('M')[1].split(',')
-					console.log(point)
 //					console.log(d3.geoTransform().stream.point(parseFloat(point.x),parseFloat(point.y)))
 					return 'translate('+ point.x + ',' + point.y +')'
 					//return 'translate('+ (point.x / (10*proj.scale)) +',' + (point.y / (100*proj.scale)) +')'
@@ -304,7 +307,7 @@ L.TopoJSON = L.GeoJSON.extend({
 				//Pick up the exports of selected country
 				var targets = _.uniq(_.pluck(exports, 'imp'));
 				
-				var thisBorder = e.target.feature.geometry.coordinates[0][0]
+				var thisBorder = e.target.feature.geometry.coordinates[0]
 
 //				var thisCoord = e.target.feature.geometry.coordinates[0][0][0];
 //				console.log(e.target.feature.geometry.coordinates)
@@ -324,7 +327,7 @@ L.TopoJSON = L.GeoJSON.extend({
 							console.log(thisArc)
 							
 							//TODO: Handler for multi-landmass countries; right now it just looks at the first multipolygon
-								var thatBorder = thisArc.geometry.coordinates[0][0];
+								var thatBorder = thisArc.geometry.coordinates[0];
 //								var thatCoord = thisArc.geometry.coordinates[0][0][0];
 								
 								//Just use the funtion we made...
@@ -408,20 +411,20 @@ L.TopoJSON = L.GeoJSON.extend({
 						//Now we add the animation
 						
 						var paths = d3.selectAll('.travelLine').each(function(ln){
-							console.log(ln)
+					//		console.log(ln)
 							var pathid = "#c"+ln.properties.s;
 							var mrkrid = "#marker"+ln.properties.s;
-							console.log(pathid)
+					//		console.log(pathid)
 						//console.log(paths)
 					  var path = d3.select(pathid);
 						
  					  var startPoint = pathStartPoint(path);
 					  
-					  console.log(startPoint)
+//					  console.log(startPoint)
 					  
 					  var marker = d3.select(mrkrid);
 					  marker.attr("r", function(d){
-					  	console.log(d)
+//					  	console.log(d)
 					  	return 1+3*d.properties.stroke
 					  	})
 					    .attr("transform", "translate(" + startPoint[0] + ")");
@@ -430,7 +433,7 @@ L.TopoJSON = L.GeoJSON.extend({
 
 					  //Get path start point for placing marker
 					  function pathStartPoint(path) {
-							console.log(path)
+//							console.log(path)
 					    var d = path.attr("d"),
 					    dsplitted = d.split("M");
 					    return dsplitted[1].split(",");
@@ -495,33 +498,144 @@ L.TopoJSON = L.GeoJSON.extend({
 		});//transition(d)})					
 
 function BorderToCenter(a, b){
-	//a and b are arrays of 2-item coordinate arrays; we want to return a closest to b's centerpoint
-	var tgt = [
-		_.reduce(b, function(memo, num){return memo + num[0]/b.length},0),
-		_.reduce(b, function(memo, num){return memo + num[1]/b.length},0)
-	]
+	//a and b are arrays of landmasses, each represented by arrays of many 2-item coordinate arrays along their bordes; 
+	//we want to return an array of landmass centerpoints, and then, for each border in country a, pick a landmass b closest to a, and a point along a closest to b's centerpoint
 
-	
-	var difs = [];
-	
-	a.forEach(function(coord){
-		difs.push(Math.abs(coord[0]-tgt[0]) + Math.abs(coord[1]-tgt[1]))
-	})
+	//TODO: could probably make this a lot more concise...
+		var avgA0s = [];
+		var avgA1s = [];
+		
+		a.forEach(function(c){
+			var c0 = _.reduce(c, function(memo, num){return memo + num[0]/c.length},0)
+			var c1 = _.reduce(c, function(memo, num){return memo + num[1]/c.length},0)
+			avgA0s.push(c0)
+			avgA1s.push(c1)
+		})
+		
+		console.log([avgA0s,avgA1s])
+		
+		var a0 = _.reduce(avgA0s, function(memo, num){return memo + num/avgA0s.length},0)
+		
+		var a1 = _.reduce(avgA1s, function(memo, num){return memo + num/avgA1s.length},0)
 
-	console.log([tgt,difs,_.min(difs),a[difs.indexOf(_.min(difs))]])
+		
+		var avgA = [a0,a1]
+		
 	
-	var a_to_b = {
-		source : a[difs.indexOf(_.min(difs))], 
-		target : tgt
+	//first, see if we need to look at multiple landmasses
+	if (b.length > 1){
+		var bestB;
+		var closeB = [360,360];
+
+		b.forEach(function(c){
+			var tgt = [
+				_.reduce(c, function(memo, num){return memo + num[0]/c.length},0),
+				_.reduce(c, function(memo, num){return memo + num[1]/c.length},0)
+			]
+			
+			if (
+				(Math.abs(closeB[0] - a0) + Math.abs(closeB[1] - a1)) > 
+				(Math.abs(tgt[0] - a0) + Math.abs(tgt[1] - a1)) 
+			) {
+				closeB = tgt;
+				bestB = c;
+			}
+				 
+		})
+	} else {
+		var bestB = b[0]
+		var closeB = [
+					_.reduce(bestB, function(memo, num){return memo + num[0]/bestB.length},0),
+					_.reduce(bestB, function(memo, num){return memo + num[1]/bestB.length},0)
+				]	
+	//	var difs = [];				
 	}
-	
+	//check for multiple landmasses in a
+	if(a.length > 1){
+		var newA = []
+		a.forEach(function(c){
+			
+			//Look at the closest source for each 
+			 newA.push(BorderToCenter([c],[bestB]).source)			
+			 
+		})
+		console.log(a, [newA])
+		
+		var a_to_b = BorderToCenter([newA], [bestB])
+		/*		
+		var closeA = [360,360]
+		var bestA;
+		a.forEach(function(c){
+			var tgt = [
+				_.reduce(c, function(memo, num){return memo + num[0]/c.length},0),
+				_.reduce(c, function(memo, num){return memo + num[1]/c.length},0)		
+			]
+		console.log(Math.abs(closeA[0] - closeB[0]) + Math.abs(closeA[1] - closeB[1]))
+			if (
+				(Math.abs(closeA[0] - closeB[0]) + Math.abs(closeA[1] - closeB[1])) > 
+				(Math.abs(tgt[0] - closeB[0]) + Math.abs(tgt[1] - closeB[1])) 
+			) {
+				closeA = tgt;
+				bestA = c;
+			}
+
+		})
+
+		var difs = [];
+		bestA.forEach(function(coord){
+			difs.push(Math.abs(coord[0]-closeB[0]) + Math.abs(coord[1]-closeB[1]))
+		})
+	//	console.log([tgt,difs,_.min(difs),a[difs.indexOf(_.min(difs))]])
+		var a_to_b = {
+			source : bestA[difs.indexOf(_.min(difs))], 
+			target : closeB
+		}
+		*/
+		
+//			console.log([bestA, bestB, difs,a_to_b,avgA,a,b])
+	} else {
+		a = a[0]
+		var tgt = [
+			_.reduce(bestB, function(memo, num){return memo + num[0]/bestB.length},0),
+			_.reduce(bestB, function(memo, num){return memo + num[1]/bestB.length},0)
+		]
+
+		var difs0 = [];
+		var difs1 = [];
+		
+		a.forEach(function(coord){
+			difs0.push(Math.abs(coord[0]-tgt[0])) 
+			difs1.push(Math.abs(coord[1]-tgt[1]))
+		})
+
+		console.log([tgt,a,difs0,difs1,_.min(difs0),_.min(difs1),a[difs0.indexOf(_.min(difs0))],a[difs1.indexOf(_.min(difs1))]])
+		
+		var tri = {
+			x: a[difs0.indexOf(_.min(difs0))],
+			y: a[difs1.indexOf(_.min(difs1))],
+			z: avgA
+			
+		}
+		
+		var a_to_b = {
+			source : [
+				(tri.x[0] + tri.y[0] + tri.z[0])/3, 
+				(tri.x[1] + tri.y[1] + tri.z[1])/3
+			],
+			target : tgt
+		}
+		
+	}
+		
+	console.log(a_to_b)
 	return a_to_b
-	
+
 }
 
 					
 			});
-			});
+//suppress because we load userdata asynchronously
+//			});
 
 
 
