@@ -233,19 +233,19 @@ L.TopoJSON = L.GeoJSON.extend({
 					.append('path')
 						.attr('id', function(d){console.log(d);  return 'c'+d.properties.s})
 						.attr('d', function(d){
-							//console.log(proj.pathFromGeojson(d))
+							console.log([d,proj.pathFromGeojson(d)])
 							return proj.pathFromGeojson(d)})
 //						.attr('d', d3.geoPath())
 						.attr('stroke', 'black')
 						.attr('class', 'travelLine')
 							.attr('stroke-opacity', '0.65')
 // This is actually kind of a neat effect, but we'll drop it for now
-						.attr('fill', '#88adea')
-						.attr('fill-opacity', '0.35')
+//						.attr('fill', '#88adea')
+//						.attr('fill-opacity', '0.35')
 						.attr('fill-opacity', '0')
 						.attr('stroke-width', function(d) {
 //					console.log(d); 
-					return 3*d.properties.stroke / proj.scale 
+					return d.properties.stroke / proj.scale 
 				})
 					;
 					
@@ -255,8 +255,9 @@ L.TopoJSON = L.GeoJSON.extend({
 				.attr("r", 7 / proj.scale)
 				.attr("transform", function(d){
 					console.log(proj)
+					console.log(d)
 					console.log(proj.stream)
-					var point = proj.latLngToLayerPoint([d.properties.s.source[1], d.properties.s.source[0]])
+					var point = proj.latLngToLayerPoint(d.geometry.coordinates[0])
 //					var point = proj.latLngToLayerPoint(d.geometry.coordinates[0])
 //					var point = proj.pathFromGeojson(d).split('L')[0].split('M')[1].split(',')
 					console.log(point)
@@ -363,7 +364,11 @@ L.TopoJSON = L.GeoJSON.extend({
 								var coordArc = []
 								
 								strArr.forEach(function(c){
-									coordArc.push(projection.invert(c.split(',')))
+									var iC = projection.invert(c.split(','))
+									iC = (isNaN(iC[0]) | isNaN(iC[1])) ? 
+										coordArc[(coordArc.length-1)] : 
+										iC
+									coordArc.push(iC)
 								})
 								
 //								console.log(coordArc)
