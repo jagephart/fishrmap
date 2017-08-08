@@ -24,12 +24,12 @@ fishUp <- function(fishrDir, sroot){
   froot <- paste0(fishrDir, '/inst/extdata/www');
   
   if(length(sdFiles) == 0){
-      file.copy(
+      try({file.copy(
         from=froot, to=sroot, 
         overwrite = TRUE, 
         recursive = TRUE, 
         copy.mode = TRUE
-      )
+      )})
     } else {
 #    saveRDS(Sys.time(),compress = FALSE)
     
@@ -169,7 +169,7 @@ fishRmap <- function(userdata, import = 'Import', export = 'Export', species = '
       shiny::tags$script(src="shared/fishRmap/js/api.js"),  # Always include this file this app
 
       # Leaflet stuff      
-      shiny::tags$link(rel = "stylesheet", type = "text/css", href = "shared/fishRmap/build/Leaflet.css"),
+      shiny::tags$link(rel = "stylesheet", type = "text/css", href = "shared/fishRmap/build/leaflet/dist/leaflet.css"),
       shiny::tags$script(src="shared/fishRmap/build/leaflet/dist/leaflet.js"),
       shiny::tags$script(src="shared/fishRmap/build/Leaflet.Coordinates/dist/Leaflet.Coordinates-0.1.5.min.js"),
       shiny::tags$script(src="shared/fishRmap/build/leaflet/dist/leaflet.js"),

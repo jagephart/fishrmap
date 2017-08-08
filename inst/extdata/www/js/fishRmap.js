@@ -1,9 +1,5 @@
 var testmeta = [];
 
- //WHAT YOU NEED TO DO is: 
-// 1. make sure that you're accounting for the CURRENT CENTER when you resize the svg
-// 2. select + transform the path? or just redraw? idk yet
-
 //MUST UNSUPPRESS FOR DEPLOYMENT
 /*
 app = function() {
@@ -19,17 +15,17 @@ app = function() {
 			//Read user data
 			//MUST USE shared/fishRmap version for deployment!!!!
 //		d3.json('shared/fishRmap/ajax/userdata.json', function(err, userdata) {
-		d3.json('ajax/userdata.json', function(err, userdata) {
+		d3.json('shared/fishRmap/ajax/userdata.json', function(err, userdata) {
 
 			//Read topojson
 			//MUST USE shared/fishRmap version for deployment!!!!
 //		d3.json('shared/fishRmap/ajax/world.json', function(err, world) {
-		d3.json('ajax/world.json', function(err, world) {
+		d3.json('shared/fishRmap/ajax/world.json', function(err, world) {
 		
 			//Read metadata dict with IDs for different types of identifier
 			//MUST USE shared/fishRmap version for deployment!!!!
 //		d3.json('shared/fishRmap/ajax/userdata.json', function(err, userdata) {
-		d3.json('ajax/worldmeta.json', function(err, meta) {
+		d3.json('shared/fishRmap/ajax/worldmeta.json', function(err, meta) {
 		console.log(meta)
 		
 		//Should remove this when you can 
@@ -226,14 +222,16 @@ L.TopoJSON = L.GeoJSON.extend({
 			var graticule = d3.geoGraticule();		
 
 			var linesOverlay = L.d3SvgOverlay(function(sel, proj) {
-				var upd = sel.selectAll('path').data(selJson.features);
+				console.log(arcs);
+				if (arcs != {}){
+				var upd = sel.selectAll('path').data(arcs.features);
 //				var upd = sel.data(sArr);
 				//console.log([upd, proj, mArr]);
 				
 				upd
 				.enter()
 					.append('path')
-						.attr('id', function(d){console.log(d);  return 'c'+d.properties.s.data[0].egeoloc+'to'+d.properties.s.state})
+						.attr('id', function(d){console.log(d);  return 'c'+d.properties.s})
 						.attr('d', function(d){
 							//console.log(proj.pathFromGeojson(d))
 							return proj.pathFromGeojson(d)})
@@ -241,10 +239,9 @@ L.TopoJSON = L.GeoJSON.extend({
 						.attr('stroke', 'black')
 						.attr('class', 'travelLine')
 							.attr('stroke-opacity', '0.65')
-/* This is actually kind of a neat effect, but we'll drop it for now
+// This is actually kind of a neat effect, but we'll drop it for now
 						.attr('fill', '#88adea')
 						.attr('fill-opacity', '0.35')
-*/
 						.attr('fill-opacity', '0')
 						.attr('stroke-width', function(d) {
 //					console.log(d); 
@@ -254,7 +251,7 @@ L.TopoJSON = L.GeoJSON.extend({
 					
 					
 				upd.enter().append('circle')						
-				.attr('id', function(d){console.log(d);  return 'marker'+d.properties.s.data[0].egeoloc+'to'+d.properties.s.state})
+				.attr('id', function(d){console.log(d);  return 'marker'+d.properties.s})
 				.attr("r", 7 / proj.scale)
 				.attr("transform", function(d){
 					console.log(proj)
@@ -277,6 +274,7 @@ L.TopoJSON = L.GeoJSON.extend({
 				});
 */
 //				upd.attr('stroke-width', function() {return(Math.random() * 20 / proj.scale)});
+				}
 			});
 
 
@@ -304,9 +302,11 @@ L.TopoJSON = L.GeoJSON.extend({
 
 				//Pick up the exports of selected country
 				var targets = _.uniq(_.pluck(exports, 'imp'));
+				
+				var thisBorder = e.target.feature.geometry.coordinates[0][0]
 
-				var thisCoord = e.target.feature.geometry.coordinates[0][0][0];
-				console.log(thisCoord)
+//				var thisCoord = e.target.feature.geometry.coordinates[0][0][0];
+//				console.log(e.target.feature.geometry.coordinates)
 				//arcs = {type: "MultiLineString", coordinates: []};
 				arcs = {type: "FeatureCollection", "features": []};
 //				console.log(sources)
@@ -321,52 +321,91 @@ L.TopoJSON = L.GeoJSON.extend({
 					});
 						if (typeof thisArc != 'undefined') {
 							console.log(thisArc)
-								var thatCoord = thisArc.geometry.coordinates[0][0][0];
+							
+							//TODO: Handler for multi-landmass countries; right now it just looks at the first multipolygon
+								var thatBorder = thisArc.geometry.coordinates[0][0];
+//								var thatCoord = thisArc.geometry.coordinates[0][0][0];
+								
+								//Just use the funtion we made...
+								var A_to_B = BorderToCenter(thisBorder, thatBorder)
+								
+								var thisCoord = A_to_B.source
+								var thatCoord = A_to_B.target
+								
+								console.log([thisBorder, thisCoord, thatBorder, thatCoord])
 								geoCArr = [];
 								arcLevel = 0;
 								//arcs.coordinates.push([thisCoord, thatCoord])
+
+								//here's where we do our geographic projection
+    						var width = 960,
+							    height = 480;
+
+    						var projection = d3.geoEquirectangular()
+								    .scale(153)
+								    .rotate([160, 0])
+								    .translate([width / 2, height / 2])
+								    .precision(.1);
 								
+								var path = d3.geoPath()
+								    .projection(projection);
+								
+								var graticule = d3.geoGraticule();
+
+    						var pathStr = path({type: "LineString", coordinates: [ thisCoord, thatCoord ]})
+    						
+    						var strArr = pathStr.split('L')
+    						
+    						strArr[0] = strArr[0].replace('M', '')
+
+//    						console.log(strArr)
+								
+								var coordArc = []
+								
+								strArr.forEach(function(c){
+									coordArc.push(projection.invert(c.split(',')))
+								})
+								
+//								console.log(coordArc)
+    						
+							//try {console.log(d3.geoPath()(s.source, s.target))} catch(err) {console.log(err)}
+							//var line = d3.geoInterpolate([s.source[1], s.source[0]], [s.target[1], s.target[0]])
+							  var sfeature =  { "type": "Feature", "geometry": 
+							  	{ "type": "LineString",
+//							    "coordinates": [ s.source, s.target ]
+							    "coordinates": coordArc
+    							}, 
+    						"properties":{"stroke":1, "s":iso_id[iso]+'to'+thisID.id}
+    						}
+
+    						arcs.features.push(sfeature)
+    						
+/*								
 								arcs.features.push({
 									"type" : "feature", 
 									"geometry" : {
 										"type" : "LineString", 
-										"coordinates":	[thisCoord].concat(geoCArr).concat([thatCoord])
+										"coordinates":	[thisCoord, thatCoord]
 									}
 								})
+								
+*/
+
 						}
 					} else {
 						console.log('Source not found in geographic data: '+d)
 					}
 				})
-				console.log(arcs)
+				
+				console.log(arcs)				
 				linesOverlay.addTo(map);			
-			}
-			
-			function onEachFeature(feature, layer) {
-				//bind click
-				layer.on({
-						click: whenClicked
-				});
-			}
-
-			var worldUnderlay = new L.TopoJSON(world, {onEachFeature: onEachFeature, opacity: 0.5, fillOpacity: 0.5}).addTo(map);
-			
-			L.control.layers({"Geo Tiles": tiles}, {
-				//	"Countries": countriesOverlay, 
-					"Countries": worldUnderlay, 
-					"Trade links": linesOverlay
-				}).addTo(map);
-
-//			countries = world.features; 
-//			countriesOverlay.addTo(map);			
-			worldUnderlay.addTo(map);
-			linesOverlay.addTo(map);		
-
+				
 						//Now we add the animation
 						
 						var paths = d3.selectAll('.travelLine').each(function(ln){
-							var pathid = "#c"+ln.properties.s.data[0].egeoloc+'to'+ln.properties.s.state;
-							var mrkrid = "#marker"+ln.properties.s.data[0].egeoloc+'to'+ln.properties.s.state;
+							console.log(ln)
+							var pathid = "#c"+ln.properties.s;
+							var mrkrid = "#marker"+ln.properties.s;
 							console.log(pathid)
 						//console.log(paths)
 					  var path = d3.select(pathid);
@@ -426,12 +465,60 @@ L.TopoJSON = L.GeoJSON.extend({
 					      return i(t);
 					    }
 					  }
-
-					});//transition(d)})					
-				
 				});			
+			}
+			
+			function onEachFeature(feature, layer) {
+				//bind click
+				layer.on({
+						click: whenClicked
+				});
+			}
+
+			var worldUnderlay = new L.TopoJSON(world, {onEachFeature: onEachFeature, opacity: 0.5, fillOpacity: 0.5}).addTo(map);
+			
+			L.control.layers({"Geo Tiles": tiles}, {
+				//	"Countries": countriesOverlay, 
+					"Countries": worldUnderlay, 
+					"Trade links": linesOverlay
+				}).addTo(map);
+
+//			countries = world.features; 
+//			countriesOverlay.addTo(map);			
+			worldUnderlay.addTo(map);
+			linesOverlay.addTo(map);		
+		});//transition(d)})					
+
+function BorderToCenter(a, b){
+	//a and b are arrays of 2-item coordinate arrays; we want to return a closest to b's centerpoint
+	var tgt = [
+		_.reduce(b, function(memo, num){return memo + num[0]/b.length},0),
+		_.reduce(b, function(memo, num){return memo + num[1]/b.length},0)
+	]
+
+	
+	var difs = [];
+	
+	a.forEach(function(coord){
+		difs.push(Math.abs(coord[0]-tgt[0]) + Math.abs(coord[1]-tgt[1]))
+	})
+
+	console.log([tgt,difs,_.min(difs),a[difs.indexOf(_.min(difs))]])
+	
+	var a_to_b = {
+		source : a[difs.indexOf(_.min(difs))], 
+		target : tgt
+	}
+	
+	return a_to_b
+	
+}
+
+					
 			});
 			});
+
+
 
 //MUST UNSUPPRESS FOR DEPLOYMENT
 /*
