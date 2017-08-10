@@ -307,7 +307,7 @@ L.TopoJSON = L.GeoJSON.extend({
 				//Pick up the exports of selected country
 				var targets = _.uniq(_.pluck(exports, 'imp'));
 				
-				var thisBorder = e.target.feature.geometry.coordinates[0]
+				var thisBorder = _.flatten(e.target.feature.geometry.coordinates, true)
 
 //				var thisCoord = e.target.feature.geometry.coordinates[0][0][0];
 //				console.log(e.target.feature.geometry.coordinates)
@@ -324,10 +324,10 @@ L.TopoJSON = L.GeoJSON.extend({
 						return feat.id ==  thisID.id
 					});
 						if (typeof thisArc != 'undefined') {
-							console.log(thisArc)
+//							console.log(thisArc)
 							
 							//TODO: Handler for multi-landmass countries; right now it just looks at the first multipolygon
-								var thatBorder = thisArc.geometry.coordinates[0];
+								var thatBorder = _.flatten(thisArc.geometry.coordinates,true);
 //								var thatCoord = thisArc.geometry.coordinates[0][0][0];
 								
 								//Just use the funtion we made...
@@ -336,7 +336,7 @@ L.TopoJSON = L.GeoJSON.extend({
 								var thisCoord = A_to_B.source
 								var thatCoord = A_to_B.target
 								
-								console.log([thisBorder, thisCoord, thatBorder, thatCoord])
+//								console.log([thisBorder, thisCoord, thatBorder, thatCoord])
 								geoCArr = [];
 								arcLevel = 0;
 								//arcs.coordinates.push([thisCoord, thatCoord])
@@ -405,7 +405,7 @@ L.TopoJSON = L.GeoJSON.extend({
 					}
 				})
 				
-				console.log(arcs)				
+//				console.log(arcs)				
 				linesOverlay.addTo(map);			
 				
 						//Now we add the animation
@@ -497,6 +497,8 @@ L.TopoJSON = L.GeoJSON.extend({
 			linesOverlay.addTo(map);		
 		});//transition(d)})					
 
+		
+/*
 function BorderToCenter(a, b){
 	//a and b are arrays of landmasses, each represented by arrays of many 2-item coordinate arrays along their bordes; 
 	//we want to return an array of landmass centerpoints, and then, for each border in country a, pick a landmass b closest to a, and a point along a closest to b's centerpoint
@@ -559,38 +561,9 @@ function BorderToCenter(a, b){
 			 newA.push(BorderToCenter([c],[bestB]).source)			
 			 
 		})
-		console.log(a, [newA])
+	//	console.log(a, [newA])
 		
 		var a_to_b = BorderToCenter([newA], [bestB])
-		/*		
-		var closeA = [360,360]
-		var bestA;
-		a.forEach(function(c){
-			var tgt = [
-				_.reduce(c, function(memo, num){return memo + num[0]/c.length},0),
-				_.reduce(c, function(memo, num){return memo + num[1]/c.length},0)		
-			]
-		console.log(Math.abs(closeA[0] - closeB[0]) + Math.abs(closeA[1] - closeB[1]))
-			if (
-				(Math.abs(closeA[0] - closeB[0]) + Math.abs(closeA[1] - closeB[1])) > 
-				(Math.abs(tgt[0] - closeB[0]) + Math.abs(tgt[1] - closeB[1])) 
-			) {
-				closeA = tgt;
-				bestA = c;
-			}
-
-		})
-
-		var difs = [];
-		bestA.forEach(function(coord){
-			difs.push(Math.abs(coord[0]-closeB[0]) + Math.abs(coord[1]-closeB[1]))
-		})
-	//	console.log([tgt,difs,_.min(difs),a[difs.indexOf(_.min(difs))]])
-		var a_to_b = {
-			source : bestA[difs.indexOf(_.min(difs))], 
-			target : closeB
-		}
-		*/
 		
 //			console.log([bestA, bestB, difs,a_to_b,avgA,a,b])
 	} else {
@@ -607,8 +580,10 @@ function BorderToCenter(a, b){
 			difs0.push(Math.abs(coord[0]-tgt[0])) 
 			difs1.push(Math.abs(coord[1]-tgt[1]))
 		})
+		
+		avgA = [arrAvg(_.unzip(a)[0]), arrAvg(_.unzip(a)[1])]
 
-		console.log([tgt,a,difs0,difs1,_.min(difs0),_.min(difs1),a[difs0.indexOf(_.min(difs0))],a[difs1.indexOf(_.min(difs1))]])
+//		console.log([tgt,a,difs0,difs1,_.min(difs0),_.min(difs1),a[difs0.indexOf(_.min(difs0))],a[difs1.indexOf(_.min(difs1))]])
 		
 		var tri = {
 			x: a[difs0.indexOf(_.min(difs0))],
@@ -627,17 +602,82 @@ function BorderToCenter(a, b){
 		
 	}
 		
-	console.log(a_to_b)
+	console.log([a, b, a_to_b])
 	return a_to_b
 
 }
+*/
+function BorderToCenter(a, b){
+	
+	var aF = _.flatten(a, true)
+	var bF = _.flatten(b, true)
+	aJunk = aF.pop()
+	bJunk = bF.pop()
+	
+	var a0 = _.unzip(aF)[0]
+	var a1 = _.unzip(aF)[1]
+	
+	var b0 = _.unzip(bF)[0]
+	var b1 = _.unzip(bF)[1]
+	
+	
+	var b0Mid = arrAvg(b0)
+	var b1Mid = arrAvg(b1)
+	
+	var midB = [b0Mid, b1Mid]
+	
+	var dif0 = []
+	var dif1 = []
+	
+	aF.forEach(function(c){
+			dif0.push(Math.abs(c[0]-b0Mid))
+			dif1.push(Math.abs(c[1]-b1Mid))
+	})
+		
 
-					
+	var minDiff0 = _.indexOf(dif0, _.min(dif0))
+	var minDiff1 = _.indexOf(dif1, _.min(dif1))
+	
+	var minDiffAvg = (minDiff0 + minDiff1)/2
+/*
+	var a0MinDiff = a0[_.indexOf(dif0, _.min(dif0))]
+	var a1MinDiff = a1[_.indexOf(dif1, _.min(dif1))]
+*/
+	
+	var a0Mid = arrAvg(a0)
+	var a1Mid = arrAvg(a1)
+	
+	var midA = [a0Mid, a1Mid]
+
+	var a_to_b = {
+			source : aF[round(minDiffAvg,0)], //[
+//				(a0Mid + a0MinDiff)/2, 
+//				(a1Mid + a1MinDiff)/2
+//			],
+			target : midB
+		}
+
+	console.log([a, b, aF, bF, minDiff0, minDiff1, minDiffAvg, midA, midB, a_to_b])
+
+	return a_to_b;
+}					
 			});
 //suppress because we load userdata asynchronously
 //			});
 
+function arrAvg(a){
+	var sum = 0;
+	for( var i = 0; i < a.length; i++ ){
+			sum += a[i]
+	}
 
+	var avg = sum/a.length;
+	return avg;
+}
+
+function round(value, decimals) {
+  return Number(Math.round(value+'e'+decimals)+'e-'+decimals);
+}
 
 //MUST UNSUPPRESS FOR DEPLOYMENT
 /*
