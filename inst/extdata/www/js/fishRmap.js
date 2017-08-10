@@ -629,9 +629,12 @@ function BorderToCenter(a, b){
 	var dif0 = []
 	var dif1 = []
 	
+	var dif2 = []
+
 	aF.forEach(function(c){
 			dif0.push(Math.abs(c[0]-b0Mid))
 			dif1.push(Math.abs(c[1]-b1Mid))
+			dif2.push(Math.abs(c[0]-b0Mid) + Math.abs(c[1]-b1Mid))
 	})
 		
 
@@ -648,16 +651,23 @@ function BorderToCenter(a, b){
 	var a1Mid = arrAvg(a1)
 	
 	var midA = [a0Mid, a1Mid]
+	
+	//approach 1
+//	var mindex = round(minDiffAvg,0)
+	
+	//approach 2
+	var mindex = _.indexOf(dif2, _.min(dif2))
+	
 
 	var a_to_b = {
-			source : aF[round(minDiffAvg,0)], //[
+			source : aF[mindex], //[
 //				(a0Mid + a0MinDiff)/2, 
 //				(a1Mid + a1MinDiff)/2
 //			],
 			target : midB
 		}
 
-	console.log([a, b, aF, bF, minDiff0, minDiff1, minDiffAvg, midA, midB, a_to_b])
+//	console.log([a, b, aF, bF, minDiff0, minDiff1, minDiffAvg, midA, midB, a_to_b])
 
 	return a_to_b;
 }					
