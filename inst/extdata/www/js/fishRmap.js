@@ -129,6 +129,9 @@ app = function() {
 		.attr('width', chartWid+'px')
 		
 
+		drawChart(imports, 'import')
+		drawChart(exports, 'export')
+		
 		
 
 		updateVis();
@@ -137,8 +140,6 @@ app = function() {
 	function updateVis()
 	{
 		
-		drawChart(imports, 'import')
-		drawChart(exports, 'export')
 		
 	}	
 	
@@ -164,7 +165,10 @@ app = function() {
 		y.domain([0,_.max(data, function(d) { return d.val; }).val]);
 
 		var line = d3.line()
-				.x(function(d) {console.log([d, x(d.yrs), y(d.val), y.domain()]); return x(d.yrs); })
+				.x(function(d) {
+					//console.log([d, x(d.yrs), y(d.val), y.domain()]); 
+					return x(d.yrs); 
+				})
 				.y(function(d) { return y(d.val); });
 
 		g.append("g")
@@ -194,13 +198,14 @@ app = function() {
 			{
 				if(spec != 'All')
 				{
-					console.log([spec, maxObs])
+					//console.log([spec, maxObs])
 					var dat = _.where(data, {spc: spec, exp: maxObs.exp, imp: maxObs.imp}) 
 					
-					console.log([data, spec, dat])
+					//console.log([data, spec, dat])
 				
 					g.append("path")
 					.datum(dat)
+					.attr("id", spec)
 					.attr("fill", "none")
 					.attr("stroke", "steelblue")
 					.attr("stroke-linejoin", "round")
@@ -385,7 +390,7 @@ app = function() {
               };
           }					
 					
-			console.log(convertTopojsonToGeojson(world));
+			//console.log(convertTopojsonToGeojson(world));
 			var newworld = convertTopojsonToGeojson(world);
 
 	
@@ -454,13 +459,13 @@ app = function() {
 
 			var linesOverlay = L.d3SvgOverlay(function(sel, proj) 
 			{
-				console.log(arcs);
+				//console.log(arcs);
 				if (typeof arcs.features != 'undefined')
 				{
 					var upd = sel.selectAll('path').data(arcs.features);
 	//				var upd = sel.data(sArr);
 					//console.log([upd, proj, mArr]);
-					console.log(upd)
+					//console.log(upd)
 					
 					upd
 					.enter()
@@ -504,7 +509,7 @@ app = function() {
 			function whenClicked(e)
 			{
 				selJson = {"type": "FeatureCollection","features": []}
-				console.log(e);
+//				console.log(e);
 				selectedISO = e;
 
 //				Hide old arcs				
@@ -520,7 +525,7 @@ app = function() {
 //				console.log(e.target);
 //				console.log(iso_id);
 //				console.log(userdata);
-				console.log([e.target.feature.id, iso_id[iso],iso_id])
+//				console.log([e.target.feature.id, iso_id[iso],iso_id])
 
 				imports = _.where(userdata, {imp: parseFloat(iso_id[iso])});
 				exports = _.where(userdata, {exp: parseFloat(iso_id[iso])});
@@ -528,8 +533,8 @@ app = function() {
 				impMax = _.max(imports, function(trade){return trade.val})
 				expMax = _.max(exports, function(trade){return trade.val})
 
-				console.log(impMax)
-				console.log(expMax)
+//				console.log(impMax)
+//				console.log(expMax)
 				
 				
 				
@@ -549,7 +554,7 @@ app = function() {
 			
 				sources.forEach(function(d)
 				{
-					console.log(d)
+					//console.log(d)
 					var thisID = _.filter(meta, function(m){return m[iso] == d})[0];
 					if (typeof thisID != 'undefined') {
 //					console.log([thisID,thisID.id]);
@@ -623,7 +628,7 @@ app = function() {
 							);
 							
 							var modifier = (theseImps/cnt)/impMax.val
-							console.log([theseImps,cnt,modifier])
+							//console.log([theseImps,cnt,modifier])
 							//try {console.log(d3.geoPath()(s.source, s.target))} catch(err) {console.log(err)}
 							//var line = d3.geoInterpolate([s.source[1], s.source[0]], [s.target[1], s.target[0]])
 							  var sfeature =  { "type": "Feature", "geometry": 

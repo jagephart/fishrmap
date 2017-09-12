@@ -58,7 +58,7 @@ fishUp <- function(fishrDir, sroot){
   return('');
 }
 
-fishRmap <- function(userdata, import = 'Import', export = 'Export', species = 'Species', value = 'value', year = 'Year', iso = 'numeric'){
+fishRmap <- function(userdata, import = 'Import', export = 'Export', species = 'Species', value = 'value', year = 'Year', iso = 'numeric', importOnly = FALSE, exportOnly = FALSE){
   requireNamespace('shiny', quietly = TRUE)
   requireNamespace('jsonlite', quietly = TRUE)
   requireNamespace('data.table', quietly = TRUE)
@@ -129,7 +129,7 @@ fishRmap <- function(userdata, import = 'Import', export = 'Export', species = '
   #	writeLines(paste0('var userdata = ', userJSON), 'inst/extdata/www/ajax/userdata.js')
   #wrldJS <- paste0('var userdata = ',  readLines('inst/extdata/www/ajax/world.json'))
   
-  writeLines(jsonlite::toJSON(uDT), paste0(servPath, '/ajax/userdata.json'))
+  writeLines(jsonlite::toJSON(uDT[val != 0]), paste0(servPath, '/ajax/userdata.json'))
   #data.table::fwrite(uDT, paste0(servPath, '/ajax/userdata.csv'))
   
   iso_type <- ifelse(
