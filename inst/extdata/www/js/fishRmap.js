@@ -17,7 +17,8 @@ app = function() {
 			//Read user data
 			//MUST USE shared/fishRmap version for deployment!!!!
 //		d3.json('shared/fishRmap/ajax/userdata.json', function(err, userdata) {
-	function getUserdata(){
+	function getUserdata()
+	{
 		d3.json('shared/fishRmap/ajax/userdata.json', function(err, data) {		
 		//d3.csv('shared/fishRmap/ajax/userdata.csv', function(err, data) {
 			data.forEach(function(d){
@@ -32,12 +33,14 @@ app = function() {
 			//Read topojson
 			//MUST USE shared/fishRmap version for deployment!!!!
 //		d3.json('shared/fishRmap/ajax/world.json', function(err, world) {
-		d3.json('shared/fishRmap/ajax/world.json', function(err, world) {
+	d3.json('shared/fishRmap/ajax/world.json', function(err, world) 
+	{
 		
 			//Read metadata dict with IDs for different types of identifier
 			//MUST USE shared/fishRmap version for deployment!!!!
 //		d3.json('shared/fishRmap/ajax/userdata.json', function(err, userdata) {
-		d3.json('shared/fishRmap/ajax/worldmeta.json', function(err, meta) {
+		d3.json('shared/fishRmap/ajax/worldmeta.json', function(err, meta) 
+		{
 		console.log(meta)
 		
 		//Should remove this when you can 
@@ -45,32 +48,41 @@ app = function() {
 		
 // Extend geojson to accomodate topojson--will be more efficient
 //via http://blog.webkid.io/maps-with-leaflet-and-topojson/
-L.TopoJSON = L.GeoJSON.extend({  
-  addData: function(jsonData) {    
-    if (jsonData.type === "Topology") {
-      for (key in jsonData.objects) {
-        geojson = topojson.feature(jsonData, jsonData.objects[key]);
-//				console.log('Adding geojson feature');
-//				console.log(geojson);
-        L.GeoJSON.prototype.addData.call(this, geojson);
-      }
-    }
-    else {
-      L.GeoJSON.prototype.addData.call(this, jsonData);
-    }
-  }  
-});
+		L.TopoJSON = L.GeoJSON.extend(
+		{  
+			addData: function(jsonData) 
+			{    
+				if (jsonData.type === "Topology") 
+				{
+					for (key in jsonData.objects) 
+					{
+						geojson = topojson.feature(jsonData, jsonData.objects[key]);
+		//				console.log('Adding geojson feature');
+		//				console.log(geojson);
+						L.GeoJSON.prototype.addData.call(this, geojson);
+					}
+				}
+				else 
+				{
+					L.GeoJSON.prototype.addData.call(this, jsonData);
+				}
+			}  
+		});
 //			var worldL = new L.TopoJSON(world);
 			
 			
 //More general conversion of a given TopoJSON to GeoJSON for arcs
-          var convertTopojsonToGeojson = function(topojsonString) {
-              try {
+          var convertTopojsonToGeojson = function(topojsonString) 
+					{
+              try 
+							{
                   var parsedTopojson = topojsonString;
                   var geJSONobj = new GeoJSON();
                   //iterate over each key in the objects of the topojson
-                  for (var col in parsedTopojson.objects) {
-                      if (parsedTopojson.objects.hasOwnProperty(col)) {
+                  for (var col in parsedTopojson.objects) 
+									{
+                      if (parsedTopojson.objects.hasOwnProperty(col)) 
+											{
                           var gJ = topojson.feature(parsedTopojson, parsedTopojson.objects[col]);
                           //merge with the existing GeoJSON Object
                           geJSONobj.merge(gJ);
@@ -80,23 +92,28 @@ L.TopoJSON = L.GeoJSON.extend({
                   var geojson = geJSONobj.getData();
                   //Write it to the geojson text box
                   return geojson;
-              } catch (error) {
+              } catch (error) 
+							{
 //                  displayError('There was an unknown error converting your TopoJSON to GeoJSON. Sorry.');
                   console.log(error, error.message);
               }
           };
 
          //function for building GeoJSON:
-          function GeoJSON() {
+          function GeoJSON() 
+					{
               var data;
-              this.merge = function(input) {
-                  if (this.data == null) {
+              this.merge = function(input) 
+							{
+                  if (this.data == null) 
+									{
                       this.data = input;
                       return;
                   }
                   //Data already exists, we need to look at the type
                   var type = this.data.type;
-                  switch (type) {
+                  switch (type) 
+									{
                       case "FeatureCollection":
                           //Featurecollection already exists. We just need to add the Features from the input
                           // to the data's Features
@@ -132,9 +149,11 @@ L.TopoJSON = L.GeoJSON.extend({
                           throw "UnExpected data type";
                   }
               };
-              this.getFeatures = function(geoJSON) {
+              this.getFeatures = function(geoJSON) 
+							{
                   var type = geoJSON.type;
-                  switch (type) {
+                  switch (type) 
+									{
                       case "FeatureCollection":
                           return geoJSON.features;
                       case "Feature":
@@ -153,14 +172,16 @@ L.TopoJSON = L.GeoJSON.extend({
                           return [];
                   }
               };
-              this.makeFeaturesArray = function(geom) {
+              this.makeFeaturesArray = function(geom) 
+							{
                   var feature = {
                       "type": "Feature",
                       "geometry": geom //Note: There can't be properties.
                   };
                   return [feature];
               };
-              this.getData = function() {
+              this.getData = function() 
+							{
                   return this.data;
               };
           }					
@@ -196,7 +217,8 @@ L.TopoJSON = L.GeoJSON.extend({
 //			var countries = [];
 			var countries = newworld.features; 
 
-			var countriesOverlay = L.d3SvgOverlay(function(sel, proj) {
+			var countriesOverlay = L.d3SvgOverlay(function(sel, proj) 
+			{
 //				function drawCountries(d){
 //					console.log(d);
 //				}
@@ -231,30 +253,32 @@ L.TopoJSON = L.GeoJSON.extend({
 
 			var graticule = d3.geoGraticule();		
 
-			var linesOverlay = L.d3SvgOverlay(function(sel, proj) {
+			var linesOverlay = L.d3SvgOverlay(function(sel, proj) 
+			{
 				console.log(arcs);
-				if (typeof arcs.features != 'undefined'){
-				var upd = sel.selectAll('path').data(arcs.features);
-//				var upd = sel.data(sArr);
-				//console.log([upd, proj, mArr]);
-				console.log(upd)
-				
-				upd
-				.enter()
-					.append('path')
-						.attr('id', function(d){return 'c'+d.properties.s})
-						.attr('d', function(d){
-							return proj.pathFromGeojson(d)})
-//						.attr('d', d3.geoPath())
-						.attr('stroke', 'black')
-						.attr('class', 'travelLine')
-							.attr('stroke-opacity', '0.65')
-// This is actually kind of a neat effect, but we'll drop it for now
-//						.attr('fill', '#88adea')
-//						.attr('fill-opacity', '0.35')
-						.attr('fill-opacity', '0')
-						.attr('stroke-width', function(d) {
-//					console.log(d); 
+				if (typeof arcs.features != 'undefined')
+				{
+					var upd = sel.selectAll('path').data(arcs.features);
+	//				var upd = sel.data(sArr);
+					//console.log([upd, proj, mArr]);
+					console.log(upd)
+					
+					upd
+					.enter()
+						.append('path')
+							.attr('id', function(d){return 'c'+d.properties.s})
+							.attr('d', function(d){
+								return proj.pathFromGeojson(d)})
+	//						.attr('d', d3.geoPath())
+							.attr('stroke', 'black')
+							.attr('class', 'travelLine')
+								.attr('stroke-opacity', '0.65')
+	// This is actually kind of a neat effect, but we'll drop it for now
+	//						.attr('fill', '#88adea')
+	//						.attr('fill-opacity', '0.35')
+							.attr('fill-opacity', '0')
+							.attr('stroke-width', function(d) {
+	//					console.log(d); 
 					return d.properties.stroke / proj.scale 
 				})
 					;
@@ -285,13 +309,14 @@ L.TopoJSON = L.GeoJSON.extend({
 			});
 
 
-			function whenClicked(e){
-					selJson = {"type": "FeatureCollection","features": []}
-			console.log(e);
+			function whenClicked(e)
+			{
+				selJson = {"type": "FeatureCollection","features": []}
+				console.log(e);
 				selectedISO = e;
 
 //				Hide old arcs				
-			map.removeLayer(linesOverlay);
+				map.removeLayer(linesOverlay);
 // 		set id of new arcs (must be done after hiding
 //				iso_id = e.target.feature.properties[iso];			
 				iso_id = _.where(meta, {'id': parseFloat(e.target.feature.id)})[0];			
@@ -324,7 +349,8 @@ L.TopoJSON = L.GeoJSON.extend({
 				arcs = {type: "FeatureCollection", "features": []};
 //				console.log(sources)
 			
-				sources.forEach(function(d){
+				sources.forEach(function(d)
+				{
 					console.log(d)
 					var thisID = _.filter(meta, function(m){return m[iso] == d})[0];
 					if (typeof thisID != 'undefined') {
@@ -426,12 +452,15 @@ L.TopoJSON = L.GeoJSON.extend({
 */
 
 						}
-					} else {
+					} 
+					else 
+					{
 						console.log('Source not found in geographic data: '+d)
 					}
 				})
 				
-				targets.forEach(function(d){
+				targets.forEach(function(d)
+				{
 					var thisID = _.filter(meta, function(m){return m[iso] == d})[0];
 					if (typeof thisID != 'undefined') {
 //					console.log([thisID,thisID.id]);
@@ -532,7 +561,9 @@ L.TopoJSON = L.GeoJSON.extend({
 */
 
 						}
-					} else {
+					} 
+					else 
+					{
 						console.log('Source not found in geographic data: '+d)
 					}
 				})
@@ -541,7 +572,8 @@ L.TopoJSON = L.GeoJSON.extend({
 				
 						//Now we add the animation
 						
-				var paths = d3.selectAll('.travelLine').each(function(ln){
+				var paths = d3.selectAll('.travelLine').each(function(ln)
+				{
 							//console.log(ln)
 							var pathid = "#c"+ln.properties.s;
 							var mrkrid = "#marker"+ln.properties.s;
@@ -554,7 +586,8 @@ L.TopoJSON = L.GeoJSON.extend({
 //					  console.log(startPoint)
 					  
 					  var marker = d3.select(mrkrid);
-					  marker.attr("r", function(d){
+					  marker.attr("r", function(d)
+						{
 //					  	console.log(d)
 					  	return 1+3*d.properties.stroke
 					  	})
@@ -563,54 +596,71 @@ L.TopoJSON = L.GeoJSON.extend({
 					  ptransition();
 
 					  //Get path start point for placing marker
-					  function pathStartPoint(path) {
+					  function pathStartPoint(path) 
+						{
 //							console.log(path)
 					    var d = path.attr("d"),
 					    dsplitted = d.split("M");
 					    return dsplitted[1].split(",");
 					  }
 					
-					  function ctransition() {
+					  function ctransition() 
+						{
 					    marker.transition()
 					        .duration(3500)
 					        .attrTween("transform", translateAlong(path.node()))
 					        .on("end", ctransition);// infinite loop
 					  }
 
-					  function translateAlong(path) {
+					  function translateAlong(path) 
+						{
 					    var l = path.getTotalLength();
-					    return function(i) {
-					      return function(t) {
+					    return function(i) 
+							{
+					      return function(t) 
+								{
 					        var p = path.getPointAtLength(t * l);
 					        return "translate(" + p.x + "," + p.y + ")";//Move marker
 					      }
 					    }
 					  }
 										  
-					  function ptransition() {
+					  function ptransition() 
+						{
 					    path.transition()
 					        .duration(3500)
 					        .attrTween("stroke-dasharray", tweenDash)
 					        .on("end", ptransition); // infinite loop
 					  }
 					
-					  function tweenDash() {
+					  function tweenDash() 
+						{
 					    var l = path.node().getTotalLength();
 					    var i = d3.interpolateString("0," + l, l + "," + l); // interpolation of stroke-dasharray style attr
-					    return function(t) {
+					    return function(t) 
+							{
 //					      var marker = d3.select("#marker");
 					      var p = path.node().getPointAtLength(t * l);
 					      marker.attr("transform", "translate(" + p.x + "," + p.y + ")");//move marker
 					      return i(t);
 					    }
 					  }
+						
+						function visControls()
+						{
+							
+						}
+						
+						
 				});
 				
 			}
 			
-			function onEachFeature(feature, layer) {
+			function onEachFeature(feature, layer) 
+			{
 				//bind click
-				layer.on({
+				layer.on(
+				{
 						click: whenClicked
 				});
 			}
@@ -742,7 +792,8 @@ function BorderToCenter(a, b){
 
 }
 */
-function BorderToCenter(a, b){
+function BorderToCenter(a, b)
+{
 	
 	var aF = _.flatten(a, true)
 	var bF = _.flatten(b, true)
@@ -766,7 +817,8 @@ function BorderToCenter(a, b){
 	
 	var dif2 = []
 
-	aF.forEach(function(c){
+	aF.forEach(function(c)
+	{
 			dif0.push(Math.abs(c[0]-b0Mid))
 			dif1.push(Math.abs(c[1]-b1Mid))
 			dif2.push(Math.abs(c[0]-b0Mid) + Math.abs(c[1]-b1Mid))
@@ -810,9 +862,11 @@ function BorderToCenter(a, b){
 //suppress because we load userdata asynchronously
 //			});
 
-function arrAvg(a){
+function arrAvg(a)
+{
 	var sum = 0;
-	for( var i = 0; i < a.length; i++ ){
+	for( var i = 0; i < a.length; i++ )
+	{
 			sum += a[i]
 	}
 
@@ -820,7 +874,8 @@ function arrAvg(a){
 	return avg;
 }
 
-function round(value, decimals) {
+function round(value, decimals) 
+{
   return Number(Math.round(value+'e'+decimals)+'e-'+decimals);
 }
 
