@@ -304,6 +304,12 @@ L.TopoJSON = L.GeoJSON.extend({
 				var imports = _.where(userdata, {imp: parseFloat(iso_id[iso])});
 				var exports = _.where(userdata, {exp: parseFloat(iso_id[iso])});
 			
+				var impMax = _.max(imports, function(trade){return trade.val})
+				var expMax = _.max(exports, function(trade){return trade.val})
+
+				console.log(impMax)
+				console.log(expMax)
+				
 				//Pick up the imports of selected country
 				var sources = _.uniq(_.pluck(imports, 'exp'));
 
@@ -319,6 +325,7 @@ L.TopoJSON = L.GeoJSON.extend({
 //				console.log(sources)
 			
 				sources.forEach(function(d){
+					console.log(d)
 					var thisID = _.filter(meta, function(m){return m[iso] == d})[0];
 					if (typeof thisID != 'undefined') {
 //					console.log([thisID,thisID.id]);
@@ -376,9 +383,23 @@ L.TopoJSON = L.GeoJSON.extend({
 										iC
 									coordArc.push(iC)
 								})
-								
+							
+							var cnt = 0;
 //								console.log(coordArc)
-    						
+    					var theseImps = _.reduce(
+								_.pluck(
+									_.where(
+										imports, {imp: d}
+									), 'val'
+								), function(memo, num)
+								{ 
+									cnt += 1;
+									return memo + num; 
+								}, 0
+							);
+							
+							var modifier = (theseImps/cnt)/impMax.val
+							console.log([theseImps,cnt,modifier])
 							//try {console.log(d3.geoPath()(s.source, s.target))} catch(err) {console.log(err)}
 							//var line = d3.geoInterpolate([s.source[1], s.source[0]], [s.target[1], s.target[0]])
 							  var sfeature =  { "type": "Feature", "geometry": 
@@ -386,7 +407,9 @@ L.TopoJSON = L.GeoJSON.extend({
 //							    "coordinates": [ s.source, s.target ]
 							    "coordinates": coordArc
     							}, 
-    						"properties":{"stroke":1, "s":iso_id[iso]+'to'+thisID.id}
+//    						"properties":{"stroke":1, "s":iso_id[iso]+'to'+thisID.id}
+    						"properties":{"stroke":(isNaN(modifier) ? 0 : modifier), "s":iso_id[iso]+'to'+thisID.id}
+
     						}
 
     						arcs.features.push(sfeature)
@@ -468,7 +491,21 @@ L.TopoJSON = L.GeoJSON.extend({
 								})
 								
 //								console.log(coordArc)
-    						
+							var cnt = 0;
+//								console.log(coordArc)
+    					var theseExps = _.reduce(
+								_.pluck(
+									_.where(
+										exports, {exp: d}
+									), 'val'
+								), function(memo, num)
+								{ 
+									cnt += 1;
+									return memo + num; 
+								}, 0
+							);
+							
+							var modifier = (theseExps/cnt)/expMax.val
 							//try {console.log(d3.geoPath()(s.source, s.target))} catch(err) {console.log(err)}
 							//var line = d3.geoInterpolate([s.source[1], s.source[0]], [s.target[1], s.target[0]])
 							  var sfeature =  { "type": "Feature", "geometry": 
@@ -476,8 +513,10 @@ L.TopoJSON = L.GeoJSON.extend({
 //							    "coordinates": [ s.source, s.target ]
 							    "coordinates": coordArc
     							}, 
-    						"properties":{"stroke":1, "s":thisID.id+'to'+iso_id[iso]}
-    						}
+//    						"properties":{"stroke":1, "s":thisID.id+'to'+iso_id[iso]}
+    						"properties":{"stroke": (isNaN(modifier) ? 0 : modifier), "s":thisID.id+'to'+iso_id[iso]}
+
+ }
 
     						arcs.features.push(sfeature)
     						
@@ -503,7 +542,7 @@ L.TopoJSON = L.GeoJSON.extend({
 						//Now we add the animation
 						
 				var paths = d3.selectAll('.travelLine').each(function(ln){
-							console.log(ln)
+							//console.log(ln)
 							var pathid = "#c"+ln.properties.s;
 							var mrkrid = "#marker"+ln.properties.s;
 					//		console.log(pathid)
