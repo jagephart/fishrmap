@@ -73,8 +73,8 @@ app = function() {
 		selSpec = 'All'
 
 		var allYrs = [];
-		imports.forEach(function(imp){allObs.push(imp.spc)})
-		exports.forEach(function(exp){allObs.push(exp.spc)})
+		imports.forEach(function(imp){allYrs.push(imp.yrs)})
+		exports.forEach(function(exp){allYrs.push(exp.yrs)})
 		years = _.uniq(allObs)
 //		years.unshift('All')
 		
@@ -112,20 +112,20 @@ app = function() {
 
 		d3.select('body').append('svg')
 		.attr('id', 'LineCharts')
-		.attr('width', 3*chartWid+'px')
-		.attr('height', (chartHgt+margin)+'px')
+		.attr('width', 4*chartWid+'px')
+		.attr('height', (chartHgt+2*margin)+'px')
 
 		d3.select('#LineCharts')
 		.append('g')
 		.attr('id', 'importCharts')
-		.attr('transform', 'translate('+chartWid+',0)')
+		.attr('transform', 'translate('+chartWid+','+margin+')')
 		.attr('width', chartWid+'px')
 		
 		
 		d3.select('#LineCharts')
 		.append('g')
 		.attr('id', 'exportCharts')
-		.attr('transform', 'translate('+(2*chartWid)+',0)')
+		.attr('transform', 'translate('+(2*chartWid + margin)+','+margin+')')
 		.attr('width', chartWid+'px')
 		
 
@@ -154,13 +154,18 @@ app = function() {
 		var y = d3.scaleLinear()
 				.rangeRound([chartHgt, 0]);
 
+
+		x.domain([
+			_.min(data, function(d){return d.yrs}).yrs, 
+			_.max(data, function(d){return d.yrs}).yrs
+			]);
+
+//		y.domain(d3.extent(data, function(d) { return d.val; }));
+		y.domain([0,_.max(data, function(d) { return d.val; }).val]);
+
 		var line = d3.line()
-				.x(function(d) { return x(parseFloat(d.yrs)); })
-				.y(function(d) { return y(parseFloat(d.val)); });
-
-
-		x.domain([years[0], years[(years.length - 1)]]);
-		y.domain(d3.extent(data, function(d) { return d.val; }));
+				.x(function(d) {console.log([d, x(d.yrs), y(d.val), y.domain()]); return x(d.yrs); })
+				.y(function(d) { return y(d.val); });
 
 		g.append("g")
 				.attr("transform", "translate(0," + chartHgt + ")")
@@ -177,14 +182,21 @@ app = function() {
 				.attr("dy", "0.71em")
 				.attr("text-anchor", "end")
 				.text("Trade ($)");
+				
+		var maxObs = _.max(data, function(d){ return d.val; });		
+		
+//		var maxID = type == 'export' ? maxObs.exp : maxObs.imp;
 
+		
 		if (selSpec == 'All')
 		{
 			species.forEach(function(spec)
 			{
 				if(spec != 'All')
 				{
-					var dat = _.where(data, {spc: spec})
+					console.log([spec, maxObs])
+					var dat = _.where(data, {spc: spec, exp: maxObs.exp, imp: maxObs.imp}) 
+					
 					console.log([data, spec, dat])
 				
 					g.append("path")
@@ -195,7 +207,8 @@ app = function() {
 					.attr("stroke-linecap", "round")
 					.attr("stroke-width", 1.5)
 					.attr("d", line);
-				}
+
+				}		
 			})
 		}
 
