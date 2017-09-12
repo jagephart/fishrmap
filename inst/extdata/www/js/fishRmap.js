@@ -25,6 +25,8 @@ app = function() {
 
 			var chartWid = 200;
 			var chartHgt = 200;
+			var margin = 50;
+	
 			var userdata = [];
 
 			
@@ -68,12 +70,13 @@ app = function() {
 		exports.forEach(function(exp){allObs.push(exp.spc)})
 		species = _.uniq(allObs)
 		species.unshift('All')
-		
+		selSpec = 'All'
+
 		var allYrs = [];
 		imports.forEach(function(imp){allObs.push(imp.spc)})
 		exports.forEach(function(exp){allObs.push(exp.spc)})
-		species = _.uniq(allObs)
-		species.unshift('All')
+		years = _.uniq(allObs)
+//		years.unshift('All')
 		
 		addVis();
 		
@@ -110,7 +113,7 @@ app = function() {
 		d3.select('body').append('svg')
 		.attr('id', 'LineCharts')
 		.attr('width', 3*chartWid+'px')
-		.attr('height', chartHgt+'px')
+		.attr('height', (chartHgt+margin)+'px')
 
 		d3.select('#LineCharts')
 		.append('g')
@@ -135,7 +138,7 @@ app = function() {
 	{
 		
 		drawChart(imports, 'import')
-		drawChart(imports, 'export')
+		drawChart(exports, 'export')
 		
 	}	
 	
@@ -152,11 +155,11 @@ app = function() {
 				.rangeRound([chartHgt, 0]);
 
 		var line = d3.line()
-				.x(function(d) { return x(d.yrs); })
-				.y(function(d) { return y(d.val); });
+				.x(function(d) { return x(parseFloat(d.yrs)); })
+				.y(function(d) { return y(parseFloat(d.val)); });
 
 
-		x.domain(d3.extent(data, function(d) { return d.yrs; }));
+		x.domain([years[0], years[(years.length - 1)]]);
 		y.domain(d3.extent(data, function(d) { return d.val; }));
 
 		g.append("g")
@@ -175,15 +178,26 @@ app = function() {
 				.attr("text-anchor", "end")
 				.text("Trade ($)");
 
-		g.append("path")
-				.datum(data)
-				.attr("fill", "none")
-				.attr("stroke", "steelblue")
-				.attr("stroke-linejoin", "round")
-				.attr("stroke-linecap", "round")
-				.attr("stroke-width", 1.5)
-				.attr("d", line);
-			
+		if (selSpec == 'All')
+		{
+			species.forEach(function(spec)
+			{
+				if(spec != 'All')
+				{
+					var dat = _.where(data, {spc: spec})
+					console.log([data, spec, dat])
+				
+					g.append("path")
+					.datum(dat)
+					.attr("fill", "none")
+					.attr("stroke", "steelblue")
+					.attr("stroke-linejoin", "round")
+					.attr("stroke-linecap", "round")
+					.attr("stroke-width", 1.5)
+					.attr("d", line);
+				}
+			})
+		}
 
 	}
 			//Read user data
