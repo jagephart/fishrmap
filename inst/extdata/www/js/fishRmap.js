@@ -509,6 +509,10 @@ app = function() {
 
 //				Hide old arcs				
 				map.removeLayer(linesOverlay);
+
+//				Try to remove charts	
+				try{d3.select('#importCharts').remove()} catch(err) {console.log(err)}
+				try{d3.select('#exportCharts').remove()} catch(err) {console.log(err)}
 // 		set id of new arcs (must be done after hiding
 //				iso_id = e.target.feature.properties[iso];			
 				iso_id = _.where(meta, {'id': parseFloat(e.target.feature.id)})[0];			
