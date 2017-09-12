@@ -11,8 +11,20 @@ app = function() {
 
 
 			var selJson;
+
+			var species;
+			var years;
+			
 			var selSpec;
 			
+			var imports;
+			var exports;
+		
+			var impMax;
+			var expMax;
+
+			var chartWid = 200;
+			var chartHgt = 200;
 			var userdata = [];
 
 			
@@ -48,8 +60,84 @@ app = function() {
 			updateVis();
 		}
 	}
+				
+	function visControls()
+	{
+		var allObs = [];
+		imports.forEach(function(imp){allObs.push(imp.spc)})
+		exports.forEach(function(exp){allObs.push(exp.spc)})
+		species = _.uniq(allObs)
+		species.unshift('All')
+		
+		var allYrs = [];
+		imports.forEach(function(imp){allObs.push(imp.spc)})
+		exports.forEach(function(exp){allObs.push(exp.spc)})
+		species = _.uniq(allObs)
+		species.unshift('All')
+		
+		addVis();
+		
+	}	
+	
+	function addVis()
+	{
+		var dropdiv = d3.select('body').append('div').attr('class', 'dropdown')
+		
+	 dropdiv.append('button')
+		.attr('onclick', 'myFunction()')
+		.attr('class', 'dropbtn')
+		.text('Species')
 
-			
+		var dropdown = dropdiv.append('div')
+		.attr('id', 'myDropdown')
+		.attr('class', 'dropdown-content')
+		
+		dropdown.append('input')
+		.attr('type', 'text')
+		.attr('placeholder', 'Search...')
+		.attr('id', 'myInput')
+		.attr('onkeyup', 'filterFunction()')
+		
+		species.forEach(function(s){
+			dropdown.append('a')
+				.attr('href', '#'+s.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").replace(/\s/g, ""))
+				.attr('onclick', 'selectFunction()')
+				.attr('onmouseup', 'selectFunction()')
+//				.attr('onmousemove', 'selectFunction()')
+				.text(s)
+		})
+
+		d3.select('body').append('svg')
+		.attr('id', 'LineCharts')
+		.attr('width', 3*chartWid+'px')
+		.attr('height', chartHgt+'px')
+
+		d3.select('#LineCharts')
+		.append('g')
+		.attr('id', 'importCharts')
+		.attr('transform', 'translate('+chartWid+',0)')
+		.attr('width', chartWid+'px')
+		
+		
+		d3.select('#LineCharts')
+		.append('g')
+		.attr('id', 'exportCharts')
+		.attr('transform', 'translate('+(2*chartWid)+',0)')
+		.attr('width', chartWid+'px')
+		
+
+		
+
+		updateVis();
+	}
+
+	function updateVis()
+	{
+		var impG = d3.select('#importCharts')
+		var expG = d3.select('#exportCharts')
+		
+		
+	}	
 			//Read user data
 			//MUST USE shared/fishRmap version for deployment!!!!
 //		d3.json('shared/fishRmap/ajax/userdata.json', function(err, userdata) {
@@ -306,7 +394,11 @@ app = function() {
 							.attr('d', function(d){
 								return proj.pathFromGeojson(d)})
 	//						.attr('d', d3.geoPath())
-							.attr('stroke', 'black')
+//							.attr('stroke', 'black')
+								.attr('stroke', function(d)
+								{
+									return d.properties.hue;
+								})
 							.attr('class', 'travelLine')
 								.attr('stroke-opacity', '0.65')
 	// This is actually kind of a neat effect, but we'll drop it for now
@@ -315,14 +407,15 @@ app = function() {
 							.attr('fill-opacity', '0')
 							.attr('stroke-width', function(d) {
 	//					console.log(d); 
-						return d.properties.stroke / proj.scale 
-					})
-					;
+								return 0.1 + d.properties.stroke / proj.scale 
+							})
+							;
 					
 					
 					upd.enter().append('circle')						
 					.attr('id', function(d){return 'marker'+d.properties.s})
 					.attr("r", 7 / proj.scale)
+					.attr("fill", function(d){return d.properties.hue})
 					.attr("transform", function(d){
 						var point = proj.latLngToLayerPoint(d.geometry.coordinates[0])
 						return 'translate('+ point.x + ',' + point.y +')'
@@ -350,14 +443,16 @@ app = function() {
 //				console.log(userdata);
 				console.log([e.target.feature.id, iso_id[iso],iso_id])
 
-				var imports = _.where(userdata, {imp: parseFloat(iso_id[iso])});
-				var exports = _.where(userdata, {exp: parseFloat(iso_id[iso])});
-			
-				var impMax = _.max(imports, function(trade){return trade.val})
-				var expMax = _.max(exports, function(trade){return trade.val})
+				imports = _.where(userdata, {imp: parseFloat(iso_id[iso])});
+				exports = _.where(userdata, {exp: parseFloat(iso_id[iso])});
+			  
+				impMax = _.max(imports, function(trade){return trade.val})
+				expMax = _.max(exports, function(trade){return trade.val})
 
 				console.log(impMax)
 				console.log(expMax)
+				
+				
 				
 				//Pick up the imports of selected country
 				var sources = _.uniq(_.pluck(imports, 'exp'));
@@ -458,7 +553,10 @@ app = function() {
 							    "coordinates": coordArc
     							}, 
 //    						"properties":{"stroke":1, "s":iso_id[iso]+'to'+thisID.id}
-    						"properties":{"stroke":(isNaN(modifier) ? 0 : modifier), "s":iso_id[iso]+'to'+thisID.id}
+    						"properties":{
+									"stroke":(isNaN(modifier) ? 0 : modifier), 
+									"hue":"red", 
+									"s":iso_id[iso]+'to'+thisID.id}
 
     						}
 
@@ -563,7 +661,11 @@ app = function() {
 							  	{ "type": "LineString",
 							    "coordinates": coordArc
     							}, 
-    						"properties":{"stroke": (isNaN(modifier) ? 0 : modifier), "s":thisID.id+'to'+iso_id[iso]}
+    						"properties":{
+									"stroke": (isNaN(modifier) ? 0 : modifier), 
+									"hue":"black", 
+									"s":thisID.id+'to'+iso_id[iso]
+								}
 
  }
 
@@ -656,45 +758,9 @@ app = function() {
 					      return i(t);
 					    }
 					  }
-						
-						function visControls()
-						{
-							var species = _.uniq(_.pluck(userdata))
-							var dropdiv = d3.select('body').append('div', ':first-child').attr('class', 'dropdown')
-							
-						 dropdiv.append('button')
-							.attr('onclick', 'myFunction()')
-							.attr('class', 'dropbtn')
-							.text('Scenario')
-
-							var dropdown = dropdiv.append('div')
-							.attr('id', 'myDropdown')
-							.attr('class', 'dropdown-content')
-							
-							dropdown.append('input')
-							.attr('type', 'text')
-							.attr('placeholder', 'Search...')
-							.attr('id', 'myInput')
-							.attr('onkeyup', 'filterFunction()')
-							
-							species.forEach(function(s){
-								dropdown.append('a')
-									.attr('href', '#'+s.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").replace(/\s/g, ""))
-									.attr('onclick', 'selectFunction()')
-									.attr('onmouseup', 'selectFunction()')
-					//				.attr('onmousemove', 'selectFunction()')
-									.text(s)
-							
-							unshift
-									
-							
-							
-							
-						}
-						
-						
+											
 				});
-				
+				visControls();
 			}
 			
 			function onEachFeature(feature, layer) 
