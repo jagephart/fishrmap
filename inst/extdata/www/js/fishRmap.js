@@ -11,9 +11,45 @@ app = function() {
 
 
 			var selJson;
+			var selSpec;
 			
 			var userdata = [];
 
+			
+//Some functions for dropdown species selector...
+	function myFunction() {
+			document.getElementById("myDropdown").classList.toggle("show");
+	}
+
+	function filterFunction() {
+			var input, filter, ul, li, a, i;
+			input = document.getElementById("myInput");
+			filter = input.value.toUpperCase();
+			div = document.getElementById("myDropdown");
+			a = div.getElementsByTagName("a");
+		//	console.log([a, input, filter, div])
+			for (i = 0; i < a.length; i++) {
+	//						console.log(a[i])
+					if (a[i].innerHTML.toUpperCase().indexOf(filter) > -1) {
+							a[i].style.display = "";
+							console.log(a[i])
+					} else {
+							a[i].style.display = "none";
+					}
+			}
+	}
+
+	function selectFunction() {
+	//  console.log(this);
+	//  console.log(window.location.href);
+		if(selSpec != window.location.href.split('#')[1] & typeof window.location.href.split('#')[1] != 'undefined'){
+			selSpec = window.location.href.split('#')[1]
+			console.log(selSpec);
+			updateVis();
+		}
+	}
+
+			
 			//Read user data
 			//MUST USE shared/fishRmap version for deployment!!!!
 //		d3.json('shared/fishRmap/ajax/userdata.json', function(err, userdata) {
@@ -279,32 +315,20 @@ app = function() {
 							.attr('fill-opacity', '0')
 							.attr('stroke-width', function(d) {
 	//					console.log(d); 
-					return d.properties.stroke / proj.scale 
-				})
+						return d.properties.stroke / proj.scale 
+					})
 					;
 					
 					
-				upd.enter().append('circle')						
-				.attr('id', function(d){return 'marker'+d.properties.s})
-				.attr("r", 7 / proj.scale)
-				.attr("transform", function(d){
-					var point = proj.latLngToLayerPoint(d.geometry.coordinates[0])
-//					var point = proj.latLngToLayerPoint(d.geometry.coordinates[0])
-//					var point = proj.pathFromGeojson(d).split('L')[0].split('M')[1].split(',')
-//					console.log(d3.geoTransform().stream.point(parseFloat(point.x),parseFloat(point.y)))
-					return 'translate('+ point.x + ',' + point.y +')'
-					//return 'translate('+ (point.x / (10*proj.scale)) +',' + (point.y / (100*proj.scale)) +')'
+					upd.enter().append('circle')						
+					.attr('id', function(d){return 'marker'+d.properties.s})
+					.attr("r", 7 / proj.scale)
+					.attr("transform", function(d){
+						var point = proj.latLngToLayerPoint(d.geometry.coordinates[0])
+						return 'translate('+ point.x + ',' + point.y +')'
 
-				})
+					})
 
-				//transition(upd);
-
-/*				upd.attr('stroke-width', function(d) {
-					console.log(d); 
-					return d.properties.stroke / proj.scale 
-				});
-*/
-//				upd.attr('stroke-width', function() {return(Math.random() * 20 / proj.scale)});
 				}
 			});
 
@@ -535,31 +559,16 @@ app = function() {
 							);
 							
 							var modifier = (theseExps/cnt)/expMax.val
-							//try {console.log(d3.geoPath()(s.source, s.target))} catch(err) {console.log(err)}
-							//var line = d3.geoInterpolate([s.source[1], s.source[0]], [s.target[1], s.target[0]])
 							  var sfeature =  { "type": "Feature", "geometry": 
 							  	{ "type": "LineString",
-//							    "coordinates": [ s.source, s.target ]
 							    "coordinates": coordArc
     							}, 
-//    						"properties":{"stroke":1, "s":thisID.id+'to'+iso_id[iso]}
     						"properties":{"stroke": (isNaN(modifier) ? 0 : modifier), "s":thisID.id+'to'+iso_id[iso]}
 
  }
 
     						arcs.features.push(sfeature)
     						
-/*								
-								arcs.features.push({
-									"type" : "feature", 
-									"geometry" : {
-										"type" : "LineString", 
-										"coordinates":	[thisCoord, thatCoord]
-									}
-								})
-								
-*/
-
 						}
 					} 
 					else 
@@ -567,10 +576,12 @@ app = function() {
 						console.log('Source not found in geographic data: '+d)
 					}
 				})
-//				console.log(arcs)				
+				
+						//First we add lines to the map
+
 				linesOverlay.addTo(map);			
 				
-						//Now we add the animation
+						//... Then we add the animation
 						
 				var paths = d3.selectAll('.travelLine').each(function(ln)
 				{
@@ -648,6 +659,36 @@ app = function() {
 						
 						function visControls()
 						{
+							var species = _.uniq(_.pluck(userdata))
+							var dropdiv = d3.select('body').append('div', ':first-child').attr('class', 'dropdown')
+							
+						 dropdiv.append('button')
+							.attr('onclick', 'myFunction()')
+							.attr('class', 'dropbtn')
+							.text('Scenario')
+
+							var dropdown = dropdiv.append('div')
+							.attr('id', 'myDropdown')
+							.attr('class', 'dropdown-content')
+							
+							dropdown.append('input')
+							.attr('type', 'text')
+							.attr('placeholder', 'Search...')
+							.attr('id', 'myInput')
+							.attr('onkeyup', 'filterFunction()')
+							
+							species.forEach(function(s){
+								dropdown.append('a')
+									.attr('href', '#'+s.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").replace(/\s/g, ""))
+									.attr('onclick', 'selectFunction()')
+									.attr('onmouseup', 'selectFunction()')
+					//				.attr('onmousemove', 'selectFunction()')
+									.text(s)
+							
+							unshift
+									
+							
+							
 							
 						}
 						
@@ -683,115 +724,6 @@ app = function() {
 		});//transition(d)})					
 
 		
-/*
-function BorderToCenter(a, b){
-	//a and b are arrays of landmasses, each represented by arrays of many 2-item coordinate arrays along their bordes; 
-	//we want to return an array of landmass centerpoints, and then, for each border in country a, pick a landmass b closest to a, and a point along a closest to b's centerpoint
-
-	//TODO: could probably make this a lot more concise...
-		var avgA0s = [];
-		var avgA1s = [];
-		
-		a.forEach(function(c){
-			var c0 = _.reduce(c, function(memo, num){return memo + num[0]/c.length},0)
-			var c1 = _.reduce(c, function(memo, num){return memo + num[1]/c.length},0)
-			avgA0s.push(c0)
-			avgA1s.push(c1)
-		})
-		
-		console.log([avgA0s,avgA1s])
-		
-		var a0 = _.reduce(avgA0s, function(memo, num){return memo + num/avgA0s.length},0)
-		
-		var a1 = _.reduce(avgA1s, function(memo, num){return memo + num/avgA1s.length},0)
-
-		
-		var avgA = [a0,a1]
-		
-	
-	//first, see if we need to look at multiple landmasses
-	if (b.length > 1){
-		var bestB;
-		var closeB = [360,360];
-
-		b.forEach(function(c){
-			var tgt = [
-				_.reduce(c, function(memo, num){return memo + num[0]/c.length},0),
-				_.reduce(c, function(memo, num){return memo + num[1]/c.length},0)
-			]
-			
-			if (
-				(Math.abs(closeB[0] - a0) + Math.abs(closeB[1] - a1)) > 
-				(Math.abs(tgt[0] - a0) + Math.abs(tgt[1] - a1)) 
-			) {
-				closeB = tgt;
-				bestB = c;
-			}
-				 
-		})
-	} else {
-		var bestB = b[0]
-		var closeB = [
-					_.reduce(bestB, function(memo, num){return memo + num[0]/bestB.length},0),
-					_.reduce(bestB, function(memo, num){return memo + num[1]/bestB.length},0)
-				]	
-	//	var difs = [];				
-	}
-	//check for multiple landmasses in a
-	if(a.length > 1){
-		var newA = []
-		a.forEach(function(c){
-			
-			//Look at the closest source for each 
-			 newA.push(BorderToCenter([c],[bestB]).source)			
-			 
-		})
-	//	console.log(a, [newA])
-		
-		var a_to_b = BorderToCenter([newA], [bestB])
-		
-//			console.log([bestA, bestB, difs,a_to_b,avgA,a,b])
-	} else {
-		a = a[0]
-		var tgt = [
-			_.reduce(bestB, function(memo, num){return memo + num[0]/bestB.length},0),
-			_.reduce(bestB, function(memo, num){return memo + num[1]/bestB.length},0)
-		]
-
-		var difs0 = [];
-		var difs1 = [];
-		
-		a.forEach(function(coord){
-			difs0.push(Math.abs(coord[0]-tgt[0])) 
-			difs1.push(Math.abs(coord[1]-tgt[1]))
-		})
-		
-		avgA = [arrAvg(_.unzip(a)[0]), arrAvg(_.unzip(a)[1])]
-
-//		console.log([tgt,a,difs0,difs1,_.min(difs0),_.min(difs1),a[difs0.indexOf(_.min(difs0))],a[difs1.indexOf(_.min(difs1))]])
-		
-		var tri = {
-			x: a[difs0.indexOf(_.min(difs0))],
-			y: a[difs1.indexOf(_.min(difs1))],
-			z: avgA
-			
-		}
-		
-		var a_to_b = {
-			source : [
-				(tri.x[0] + tri.y[0] + tri.z[0])/3, 
-				(tri.x[1] + tri.y[1] + tri.z[1])/3
-			],
-			target : tgt
-		}
-		
-	}
-		
-	console.log([a, b, a_to_b])
-	return a_to_b
-
-}
-*/
 function BorderToCenter(a, b)
 {
 	
