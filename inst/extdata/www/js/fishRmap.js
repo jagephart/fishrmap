@@ -133,11 +133,59 @@ app = function() {
 
 	function updateVis()
 	{
-		var impG = d3.select('#importCharts')
-		var expG = d3.select('#exportCharts')
 		
+		drawChart(imports, 'import')
+		drawChart(imports, 'export')
 		
 	}	
+	
+	function drawChart(data, type)
+	{
+		
+				
+		var g = d3.select('#'+type+'Charts')
+
+		var x = d3.scaleLinear()
+				.rangeRound([0, chartWid]);
+
+		var y = d3.scaleLinear()
+				.rangeRound([chartHgt, 0]);
+
+		var line = d3.line()
+				.x(function(d) { return x(d.yrs); })
+				.y(function(d) { return y(d.val); });
+
+
+		x.domain(d3.extent(data, function(d) { return d.yrs; }));
+		y.domain(d3.extent(data, function(d) { return d.val; }));
+
+		g.append("g")
+				.attr("transform", "translate(0," + chartHgt + ")")
+				.call(d3.axisBottom(x))
+			.select(".domain")
+				.remove();
+
+		g.append("g")
+				.call(d3.axisLeft(y))
+			.append("text")
+				.attr("fill", "#000")
+				.attr("transform", "rotate(-90)")
+				.attr("y", 6)
+				.attr("dy", "0.71em")
+				.attr("text-anchor", "end")
+				.text("Trade ($)");
+
+		g.append("path")
+				.datum(data)
+				.attr("fill", "none")
+				.attr("stroke", "steelblue")
+				.attr("stroke-linejoin", "round")
+				.attr("stroke-linecap", "round")
+				.attr("stroke-width", 1.5)
+				.attr("d", line);
+			
+
+	}
 			//Read user data
 			//MUST USE shared/fishRmap version for deployment!!!!
 //		d3.json('shared/fishRmap/ajax/userdata.json', function(err, userdata) {
