@@ -17,68 +17,44 @@
 
 fishUp <- function(fishrDir, sroot){
   #fishrDir <- "c:/users/andrea/documents/github/fishrmap"
+  #fishrDir <- mapPath; sroot <- servPath;
   dir.create(sroot, showWarnings = FALSE)
   
-  sdFiles <- list.files(sroot);
-
-  froot <- paste0(fishrDir, '/inst/extdata/www');
+  froot <- paste0(fishrDir, '/inst/extdata/www/');
   
-  if(length(sdFiles) == 0){
-      try({file.copy(
-        from=froot, to=sroot, 
-        overwrite = TRUE, 
-        recursive = TRUE, 
-        copy.mode = TRUE
-      )})
-    } else {
-#    saveRDS(Sys.time(),compress = FALSE)
-    
-    fdFiles <- list.files(froot);
-    #fdFiles <- paste0(wroot, list.files(wroot));
-    
-    silencio <- lapply(fdFiles, function(fl){
-      fp <- paste0(froot, '/', fl);
-      sp <- paste0(sroot, '/', fl);
+  
+  fdFiles <- list.files(froot,recursive = T);
+  sdFiles <- list.files(sroot,recursive = T);
 
-      dir.create(sp, showWarnings = FALSE)
-      
-      fls <- paste0(fp, '/', list.files(fp));
-      sls <- paste0(sp, '/', list.files(sp));
-      
-      if(
-        any(
-          !(fls %in% sls)
-        )
-      ){
-        file.copy(
-          from=fp, to=sroot, 
-          overwrite = TRUE, 
-          recursive = TRUE, 
-          copy.mode = TRUE
-        )
-      } else {
-      
-      if(
-        any(
-          file.mtime(fls) > max(file.mtime(sls))
-        )
-      ){
-        file.copy(
-          from=fp, to=sroot, 
-          overwrite = TRUE, 
-          recursive = TRUE, 
-          copy.mode = TRUE
-        )
-      }
-    }
-    return('');
-      
-      #      print(fls);
-    })
-  }
-    #ajax <- paste0(fdFiles[1], '/', list.files(fdFiles[1]))
-    #js <- paste0(fdFiles[2], '/', list.files(fdFiles[2]))
+  fullFdFiles <- paste0(froot, fdFiles);
+  fullSdFiles <- paste0(sroot, sdFiles);
+  
+  missingFiles <- fdFiles[!(fdFiles %in% sdFiles)]
+  if(length(missingFiles)>0){
+    silencio <- lapply(missingFiles, function(fl){
     
+      fp <- paste0(froot, fl);
+      fpSplit <- strsplit(fp, split = '/')[[1]]
+      fparent <- paste(
+        fpSplit[1:(length(fpSplit)-1)], 
+        collapse = '/'
+      )
+      
+      
+      sp <- paste0(sroot, '/', fl);
+      spSplit <- strsplit(sp, split = '/')[[1]]
+      sparent <- paste(
+          spSplit[1:(length(spSplit)-1)], 
+          collapse = '/'
+      )
+
+      dir.create(sparent, recursive = T, showWarnings = FALSE)
+
+      file.link(fp, sp)
+      return('');
+    })
+    
+  }
   return('');
 }
 
@@ -119,7 +95,6 @@ fishRmap <- function(userdata, import = 'Import', export = 'Export', species = '
   
   servPath <- paste0(path.package('shiny'), '/www/shared/fishRmap');
   
-  
   fishUp(mapPath, sroot = servPath);
 
   import = 'Import'; export = 'Export'; species = 'Species'; value = 'value'; year = 'Year'; iso = 'numeric'
@@ -155,6 +130,7 @@ fishRmap <- function(userdata, import = 'Import', export = 'Export', species = '
   #wrldJS <- paste0('var userdata = ',  readLines('inst/extdata/www/ajax/world.json'))
   
   writeLines(jsonlite::toJSON(uDT), paste0(servPath, '/ajax/userdata.json'))
+  #data.table::fwrite(uDT, paste0(servPath, '/ajax/userdata.csv'))
   
   iso_type <- ifelse(
     tolower(iso) == 'numeric', 

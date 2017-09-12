@@ -18,12 +18,14 @@ app = function() {
 			//MUST USE shared/fishRmap version for deployment!!!!
 //		d3.json('shared/fishRmap/ajax/userdata.json', function(err, userdata) {
 	function getUserdata(){
-		d3.json('shared/fishRmap/ajax/userdata.json', function(err, data) {
+		d3.json('shared/fishRmap/ajax/userdata.json', function(err, data) {		
+		//d3.csv('shared/fishRmap/ajax/userdata.csv', function(err, data) {
 			data.forEach(function(d){
 				userdata.push(d)				
 			})
 		})
 	}
+
 	//do this asynchronously -- we won't need until click event
 	getUserdata();
 	
@@ -231,10 +233,11 @@ L.TopoJSON = L.GeoJSON.extend({
 
 			var linesOverlay = L.d3SvgOverlay(function(sel, proj) {
 				console.log(arcs);
-				if (arcs != {}){
+				if (typeof arcs.features != 'undefined'){
 				var upd = sel.selectAll('path').data(arcs.features);
 //				var upd = sel.data(sArr);
 				//console.log([upd, proj, mArr]);
+				console.log(upd)
 				
 				upd
 				.enter()
@@ -405,13 +408,102 @@ L.TopoJSON = L.GeoJSON.extend({
 					}
 				})
 				
+				targets.forEach(function(d){
+					var thisID = _.filter(meta, function(m){return m[iso] == d})[0];
+					if (typeof thisID != 'undefined') {
+//					console.log([thisID,thisID.id]);
+					var thisArc = _.find(newworld.features, function(feat){
+//						console.log([feat.properties.id, thisID.id])
+						return feat.id ==  thisID.id
+					});
+						if (typeof thisArc != 'undefined') {
+//							console.log(thisArc)
+							
+							//TODO: Handler for multi-landmass countries; right now it just looks at the first multipolygon
+								var thatBorder = _.flatten(thisArc.geometry.coordinates,true);
+//								var thatCoord = thisArc.geometry.coordinates[0][0][0];
+								
+								//Just use the funtion we made...
+								var A_to_B = BorderToCenter(thisBorder, thatBorder)
+								
+								var thisCoord = A_to_B.target
+								var thatCoord = A_to_B.source
+								
+//								console.log([thisBorder, thisCoord, thatBorder, thatCoord])
+								geoCArr = [];
+								arcLevel = 0;
+								//arcs.coordinates.push([thisCoord, thatCoord])
+
+								//here's where we do our geographic projection
+    						var width = 960,
+							    height = 480;
+
+    						var projection = d3.geoEquirectangular()
+								    .scale(153)
+								    .rotate([160, 0])
+								    .translate([width / 2, height / 2])
+								    .precision(.1);
+								
+								var path = d3.geoPath()
+								    .projection(projection);
+								
+								var graticule = d3.geoGraticule();
+
+    						var pathStr = path({type: "LineString", coordinates: [ thisCoord, thatCoord ]})
+    						
+    						var strArr = pathStr.split('L')
+    						
+    						strArr[0] = strArr[0].replace('M', '')
+
+//    						console.log(strArr)
+								
+								var coordArc = []
+								
+								strArr.forEach(function(c){
+									var iC = projection.invert(c.split(','))
+									iC = (isNaN(iC[0]) | isNaN(iC[1])) ? 
+										coordArc[(coordArc.length-1)] : 
+										iC
+									coordArc.push(iC)
+								})
+								
+//								console.log(coordArc)
+    						
+							//try {console.log(d3.geoPath()(s.source, s.target))} catch(err) {console.log(err)}
+							//var line = d3.geoInterpolate([s.source[1], s.source[0]], [s.target[1], s.target[0]])
+							  var sfeature =  { "type": "Feature", "geometry": 
+							  	{ "type": "LineString",
+//							    "coordinates": [ s.source, s.target ]
+							    "coordinates": coordArc
+    							}, 
+    						"properties":{"stroke":1, "s":thisID.id+'to'+iso_id[iso]}
+    						}
+
+    						arcs.features.push(sfeature)
+    						
+/*								
+								arcs.features.push({
+									"type" : "feature", 
+									"geometry" : {
+										"type" : "LineString", 
+										"coordinates":	[thisCoord, thatCoord]
+									}
+								})
+								
+*/
+
+						}
+					} else {
+						console.log('Source not found in geographic data: '+d)
+					}
+				})
 //				console.log(arcs)				
 				linesOverlay.addTo(map);			
 				
 						//Now we add the animation
 						
-						var paths = d3.selectAll('.travelLine').each(function(ln){
-					//		console.log(ln)
+				var paths = d3.selectAll('.travelLine').each(function(ln){
+							console.log(ln)
 							var pathid = "#c"+ln.properties.s;
 							var mrkrid = "#marker"+ln.properties.s;
 					//		console.log(pathid)
@@ -473,7 +565,8 @@ L.TopoJSON = L.GeoJSON.extend({
 					      return i(t);
 					    }
 					  }
-				});			
+				});
+				
 			}
 			
 			function onEachFeature(feature, layer) {
@@ -484,6 +577,9 @@ L.TopoJSON = L.GeoJSON.extend({
 			}
 
 			var worldUnderlay = new L.TopoJSON(world, {onEachFeature: onEachFeature, opacity: 0.5, fillOpacity: 0.5}).addTo(map);
+			
+			L.control.coordinates().addTo(map);
+
 			
 			L.control.layers({"Geo Tiles": tiles}, {
 				//	"Countries": countriesOverlay, 
