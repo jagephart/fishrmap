@@ -4,8 +4,8 @@ library(shiny)
 
 ui <- fluidPage(
   tags$head(
-    includeScript("www/api.js"),  # Always include this file
-    includeScript("www/app.js")   # JavaScript specific to this app
+    includeScript("www/js/api.js"),  # Always include this file
+    includeScript("www/js/app.js")   # JavaScript specific to this app
   ),
   actionButton("getRversion", "R version API call"),
   actionButton("errorFunction", "API call with error")

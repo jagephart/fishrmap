@@ -15,49 +15,6 @@
 #' @examples 
 #' someExample <- 'goes here' 
 
-fishUp <- function(fishrDir, sroot){
-  #fishrDir <- "c:/users/andrea/documents/github/fishrmap"
-  #fishrDir <- mapPath; sroot <- servPath;
-  dir.create(sroot, showWarnings = FALSE)
-  
-  froot <- paste0(fishrDir, '/inst/extdata/www/');
-  
-  
-  fdFiles <- list.files(froot,recursive = T);
-  sdFiles <- list.files(sroot,recursive = T);
-
-  fullFdFiles <- paste0(froot, fdFiles);
-  fullSdFiles <- paste0(sroot, sdFiles);
-  
-  missingFiles <- fdFiles[!(fdFiles %in% sdFiles)]
-  if(length(missingFiles)>0){
-    silencio <- lapply(missingFiles, function(fl){
-    
-      fp <- paste0(froot, fl);
-      fpSplit <- strsplit(fp, split = '/')[[1]]
-      fparent <- paste(
-        fpSplit[1:(length(fpSplit)-1)], 
-        collapse = '/'
-      )
-      
-      
-      sp <- paste0(sroot, '/', fl);
-      spSplit <- strsplit(sp, split = '/')[[1]]
-      sparent <- paste(
-          spSplit[1:(length(spSplit)-1)], 
-          collapse = '/'
-      )
-
-      dir.create(sparent, recursive = T, showWarnings = FALSE)
-
-      file.link(fp, sp)
-      return('');
-    })
-    
-  }
-  return('');
-}
-
 fishRmap <- function(userdata, import = 'Import', export = 'Export', species = 'Species', value = 'value', year = 'Year', iso = 'numeric', importOnly = FALSE, exportOnly = FALSE){
   requireNamespace('shiny', quietly = TRUE)
   requireNamespace('jsonlite', quietly = TRUE)
@@ -88,16 +45,16 @@ fishRmap <- function(userdata, import = 'Import', export = 'Export', species = '
   }
 
   #For finished package  
-  #mapPath <- paste0(.libPaths(), '/fishRmap');
+  mapPath <- paste0(.libPaths(), '/fishRmap');
   
   ##For testing: 
-  mapPath <- 'c:/users/andrea/documents/github/fishrmap';
+  #mapPath <- 'c:/users/andrea/documents/github/fishrmap';
   
   servPath <- paste0(path.package('shiny'), '/www/shared/fishRmap');
   
   fishUp(mapPath, sroot = servPath);
 
-  import = 'Import'; export = 'Export'; species = 'Species'; value = 'value'; year = 'Year'; iso = 'numeric'
+#  import = 'Import'; export = 'Export'; species = 'Species'; value = 'value'; year = 'Year'; iso = 'numeric'
   ##end testing stuff
   
   params <- list()
