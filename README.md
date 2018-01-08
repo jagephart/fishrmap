@@ -32,7 +32,7 @@ fishRmap([either a 'String path to your data', or a data.frame])
 ```
 
 ## For Developers
-### "fishRmap/R/"" directory contains the R wrapper for the application 
+### "fishRmap/R/" directory contains the R wrapper for the application 
 * _fishRmap_ is the central function for the R interface to the application; the R script is primarily a wrapper for the JavaScript code contained in "fishRmap/inst/extdata/www/", although it also depends on api.R and fishUp.R
 * _fishUp_ is used to creat hard links in "[shiny library directory]/www/shared/fishRmap/"  to files in "fishRmap/inst/extdata/www/"; this is used only indirectly through the fishRmap function
 * _api_ is used to transfer data back and forth from JS app; this is used only indirectly through the fishRmap function
