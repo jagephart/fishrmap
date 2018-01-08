@@ -44,6 +44,6 @@ The user does not interact with this directly, but it is where the developer wil
 * _"js/fishRmap.css"_ is main css file
 * _"build/"_ directory contains dependency libraries
 * _"ajax/"_ directory contains geo/topojson data to be used for map
-* 
+
 
 
