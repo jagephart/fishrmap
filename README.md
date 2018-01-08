@@ -26,9 +26,25 @@ devtools::install_github(
 library(fishRmap)
 ```
 
+Alternatively, it may be necessary to install from tarball:
+```{r install2} 
+install.packages('fishRmap_0.0.1.tar.gz', repos = NULL, type = 'source')
+
+library(fishRmap)
+
+```
+
+Using the fishRmap function:
+
 ```{r use}
-## fishRmap - probably won't work for anyone else at this point; still in development
+# simple call:
 fishRmap([either a 'String path to your data', or a data.frame])
+
+# call with modified column headers
+fishRmap(myData, import = 'Import', export = 'Export', species = 'Species', value = 'value', year = 'Year', iso = 'numeric', importOnly = FALSE, exportOnly = FALSE)
+
+#view descriptions of possible parameters:
+?fishRmap
 ```
 
 ## For Developers
@@ -45,5 +61,6 @@ The user does not interact with this directly, but it is where the developer wil
 * _"build/"_ directory contains dependency libraries
 * _"ajax/"_ directory contains geo/topojson data to be used for map
 
+### To build
 
 
