@@ -47,6 +47,19 @@ fishRmap <- function(userdata, import = 'Import', export = 'Export', species = '
   #For finished package  
   mapPath <- paste0(.libPaths(), '/fishRmap');
   
+  
+  if(length(mapPath) > 1){
+    mapPath <- mapPath[1];
+    
+    warning(paste0(
+      'More than one possible fishRmap directory; using ', 
+      mapPath[1], 
+      '. try ".libPaths()" command for more information.'));
+    
+  }
+  
+  
+  
   ##For testing: 
   #mapPath <- 'c:/users/andrea/documents/github/fishrmap';
   
@@ -93,13 +106,6 @@ fishRmap <- function(userdata, import = 'Import', export = 'Export', species = '
     'var iso = "iso_n3";', 
     'var iso = "iso_a3";'
   )
-  
-  if(length(mapPath) > 1){
-    warning(paste0(
-      'More than one possible fishRmap directory; using ', 
-      mapPath[1], 
-      '. try ".libPaths()" command for more information.'))
-  }
 
   ui <- shiny::bootstrapPage(
     shiny::tags$head(
@@ -154,7 +160,7 @@ fishRmap <- function(userdata, import = 'Import', export = 'Export', species = '
     # include the API logic
     ##Suppress for development
     #		source("R/api.R", local = TRUE)$value
-    source(paste0(mapPath[1], "/R/api.R"), local = TRUE)$value
+    source(paste0(servPath, "/ajax/api.R"), local = TRUE)$value
     session$onSessionEnded(shiny::stopApp)
   }
   
