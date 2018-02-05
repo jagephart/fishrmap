@@ -85,7 +85,6 @@ fishRmap <- function(userdata, import = 'Import', export = 'Export', species = '
   #	writeLines( userJSON, 'inst/extdata/www/ajax/userdata.json')
   #	writeLines(paste0('var userdata = ', userJSON), 'inst/extdata/www/ajax/userdata.js')
   #wrldJS <- paste0('var userdata = ',  readLines('inst/extdata/www/ajax/world.json'))
-  
   writeLines(jsonlite::toJSON(uDT[val != 0]), paste0(servPath, '/ajax/userdata.json'))
   #data.table::fwrite(uDT, paste0(servPath, '/ajax/userdata.csv'))
   
@@ -95,8 +94,13 @@ fishRmap <- function(userdata, import = 'Import', export = 'Export', species = '
     'var iso = "iso_a3";'
   )
   
-  
-  
+  if(length(mapPath) > 1){
+    warning(paste0(
+      'More than one possible fishRmap directory; using ', 
+      mapPath[1], 
+      '. try ".libPaths()" command for more information.'))
+  }
+
   ui <- shiny::bootstrapPage(
     shiny::tags$head(
       shiny::tags$script(src="shared/fishRmap/js/api.js"),  # Always include this file this app
@@ -150,7 +154,7 @@ fishRmap <- function(userdata, import = 'Import', export = 'Export', species = '
     # include the API logic
     ##Suppress for development
     #		source("R/api.R", local = TRUE)$value
-    source(paste0(mapPath, "/R/api.R"), local = TRUE)$value
+    source(paste0(mapPath[1], "/R/api.R"), local = TRUE)$value
     session$onSessionEnded(shiny::stopApp)
   }
   
