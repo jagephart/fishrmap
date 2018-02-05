@@ -17,6 +17,12 @@ fishUp <- function(fishrDir, sroot){
   
   
   fdFiles <- list.files(froot,recursive = T);
+	
+	if(length(fdFiles) < 1){
+	  froot <- paste0(fishrDir, '/extdata/www/');
+		fdFiles <- list.files(froot,recursive = T);
+	}
+	
   sdFiles <- list.files(sroot,recursive = T);
   
   fullFdFiles <- paste0(froot, fdFiles);
