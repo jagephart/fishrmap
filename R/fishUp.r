@@ -1,6 +1,6 @@
 #' Call update function to create hard links to package files in shiny shared dir
 #' 
-#' @param fishDir A string path to the directory of the fishRmap library
+#' @param fishrDir A string path to the directory of the fishRmap library
 #' @param sroot A string path to the shiny shared directory 
 #' @return An empty string
 #' @export 

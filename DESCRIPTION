@@ -1,6 +1,6 @@
 Package: fishRmap
 Title: Map fishery trade data
-Version: 0.0.1
+Version: 0.0.3
 Authors@R: c(person("Andrea", "Batch", role = c("aut", "cre"),
 		     email = c("andrea.julca@gmail.com")),
 		person("Jessica", "Gephart", role = "ctb"))

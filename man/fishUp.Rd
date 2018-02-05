@@ -7,9 +7,9 @@
 fishUp(fishrDir, sroot)
 }
 \arguments{
-\item{sroot}{A string path to the shiny shared directory}
+\item{fishrDir}{A string path to the directory of the fishRmap library}
 
-\item{fishDir}{A string path to the directory of the fishRmap library}
+\item{sroot}{A string path to the shiny shared directory}
 }
 \value{
 An empty string
