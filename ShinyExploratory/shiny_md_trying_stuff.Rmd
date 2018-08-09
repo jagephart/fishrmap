@@ -1,0 +1,50 @@
+---
+title: "TryStuffOut"
+author: "Sigfried Gold"
+date: "8/6/2018"
+output: html_document
+#output: ioslides_presentation
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This R Markdown document is made interactive using Shiny. Unlike the more traditional workflow of creating static reports, you can now create documents that allow your readers to change the assumptions underlying your analysis and see the results immediately. 
+
+To learn more, see [Interactive Documents](http://rmarkdown.rstudio.com/authoring_shiny.html).
+
+```{r}
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(fishRmap)
+library(countrycode)
+agg <- read.csv("../Data/species_CT_agg_clean_13Oct17.csv")
+
+agg$imp <- countrycode(agg$Importer.Code, origin = "iso3n", destination = "iso.name.en")
+agg$imp <- coalesce(agg$imp, as.character(agg$Importer))
+agg$impcont <- countrycode(agg$Importer.Code, origin = "iso3n", destination = "continent")
+
+# make sure it's working
+#agg$Importer <- as.character(agg$Importer)
+#agg[agg$Importer != agg$imp,c('Importer','imp')]
+
+agg$exp <- countrycode(agg$Exporter.Code, origin = "iso3n", destination = "iso.name.en")
+agg$exp <- coalesce(agg$exp, as.character(agg$Exporter))
+agg$expcont <- countrycode(agg$Exporter.Code, origin = "iso3n", destination = "continent")
+
+#agg$Importer.Code <- countrycode(agg$Importer.ISO3c, origin = "iso3c", destination = "iso3n")
+#agg$Exporter.Code <- countrycode(agg$Exporter.ISO3c, origin = "iso3c", destination = "iso3n")
+
+agg <- select(agg, year, FS_group, Agg.Weight, Agg.Value, exp, expcont, imp, impcont)
+
+source("shiny_app_test/app.R")
+test_app(df=agg, 
+         facetRowsBy='expcont', facetColsBy='impcont', logTransform=T, 
+         colorBy='FS_group'
+         )
+```
+
+
