@@ -1,9 +1,41 @@
 
-test_app <- function(df, facetRowsBy, facetColsBy, colorBy, logTransform=F) {
+dimFields = tibble(
+  var = c('x', 'y', 'facetRowsBy', 'facetColsBy', 'colorBy'),
+  label = c('X', 'Y', 'Facet Rows', 'Facet Cols', 'Color'),
+  val = NA
+)
+getSelectField <- function(fDesc, choices, defaultVal=NA) {
+  selectInput(
+    inputId = fDesc[['var']],
+    label = fDesc[['label']],
+    choices = choices,
+    selected = defaultVal
+  )
+}
+getSelectFields <- function(fieldDescs, choices, defaults) {
+  lapply(
+              1:nrow(fieldDescs),
+              function(i) getSelectField(fieldDescs[i,], choices, defaults[[fieldDescs[[i,'var']]]])
+              #selectInput(inputId='id',label='label',choices=c('choice1','choice2'))
+              )
+}
+
+
+test_app <- function(df, logTransform=F, ...) {
   require(shiny)
   
+  defaults <- data.frame(...)
+  
   #facetRowsBy <- enquo(facetRowsBy)
-  colchoices <- names(df)
+  colChoices <- names(df)
+  sfields <- getSelectFields(dimFields, colChoices, defaults)
+  inputs <- c(sfields,
+              list(textInput(inputId = "caption",
+                                      label = "Caption:",
+                                      value = "some caption here"),
+                  checkboxInput(inputId = "logTransform",
+                                          label = "Log transform"))
+  )
 
   ui <- fluidPage(
     
@@ -13,29 +45,21 @@ test_app <- function(df, facetRowsBy, facetColsBy, colorBy, logTransform=F) {
     # Sidebar layout with input and output definitions ----
     sidebarLayout(
       
+      
       # Sidebar panel for inputs ----
       sidebarPanel(
-        
-        selectInput(inputId = "facetRowsBy",
-                    label = "Group facet rows by:",
-                    #selected = facetRowsBy,
-                    choices = colchoices
-        ),
-        
-        # Input: Text for providing a caption ----
-        # Note: Changes made to the caption in the textInput control
-        # are updated in the output area immediately as you type
-        textInput(inputId = "caption",
-                  label = "Caption:",
-                  value = "some caption here"),
-        
-        checkboxInput(inputId = "logTransform",
-                      label = "Log transform")
+        inputs
       ),
       
       # Main panel for displaying outputs ----
       mainPanel(
-
+        h4('dimAssignments'),
+        tableOutput("dimAssignments"),
+        h4('defaults'),
+        tableOutput("defaults"),
+        h4('inames'),
+        tableOutput("inames"),
+        
         h3(textOutput("facetRowsBy", container = span)),
         
         # Output: Formatted text for caption ----
@@ -51,6 +75,15 @@ test_app <- function(df, facetRowsBy, facetColsBy, colorBy, logTransform=F) {
   )
   
   server <- function(input, output) {
+    
+    output$dimAssignments <- renderTable(dimFields)
+    output$defaults <- renderTable(defaults)
+    #reac <- reactiveValues()
+    output$inames <- renderTable(reactive({reactiveValuesToList(input)}))
+    #print(output$inames)
+    #output$input <- reactive(renderTable(reac))
+    
+    
 
     facetRowsBy <- reactive({
       input$facetRowsBy
@@ -85,22 +118,28 @@ test_app <- function(df, facetRowsBy, facetColsBy, colorBy, logTransform=F) {
     # The output$summary depends on the datasetInput reactive
     # expression, so will be re-executed whenever datasetInput is
     # invalidated, i.e. whenever the input$dataset changes
-    output$summary <- reactive(renderPrint({
-      df %>% summarise(mean(.data[['Agg.Weight']]))
-    }))
+    #output$summary <- reactive(renderPrint({
+    #  df %>% summarise(mean())
+    #}))
     
-   
+    
     # Show the first "n" observations ----
     # The output$view depends on both the databaseInput reactive
     # expression and input$obs, so it will be re-executed whenever
     # input$dataset or input$obs is changed
     output$view <- renderPlot({
       ggplot(df, 
-        #aes(x=year, y=trnsfrm()(Agg.Weight), color=.data[[colorBy]])) +
-        aes(x=year, y=trnsfrm()(Agg.Weight), color=FS_group)) +
+             #aes(x=year, y=trnsfrm()(Agg.Weight), color=.data[[colorBy]])) +
+             aes(x=year, y=trnsfrm()(Agg.Weight), color=FS_group)) +
         geom_line( stat = "summary", fun.y = "sum", alpha=1) +
-        facet_grid(rows=vars(.data[expcont]))
-        #facet_grid(cols=vars(impcont), rows=vars(expcont))
+        #facet_wrap("expcont")
+#      facet_grid(cols=facetColsBy, rows=facetRowsBy) +
+#      labs(colour = colorBy) +
+#      labs(x = facetColsBy) +
+#      labs(y = facetRowsBy) +
+      ggtitle("testing title")
+      #ggtitle(glue::glue('rows {facetRowsBy}, cols {facetColsBy}, color {colorBy}'))
+      
       #facet_grid(rows=!!vars(facetRowsBy))
     })
     
@@ -114,5 +153,6 @@ test_app <- function(df, facetRowsBy, facetColsBy, colorBy, logTransform=F) {
     )
   )
 }
-
-#hold <- function(df) {}
+test_app(df=agg, x="year", y="Agg.Weight",
+         facetRowsBy='expcont', facetColsBy='impcont', logTransform=T, colorBy='FS_group'
+)
