@@ -1,9 +1,17 @@
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(fishRmap)
+library(countrycode)
 
 dimFields = tibble(
   var = c('x', 'y', 'facetRowsBy', 'facetColsBy', 'colorBy'),
   label = c('X', 'Y', 'Facet Rows', 'Facet Cols', 'Color'),
   val = NA
 )
+getDefaultsTibble <- function(...) { gather(tibble(...))}
+defaults <- getDefaultsTibble(x="year", y="Agg.Weight", facetRowsBy='expcont', facetColsBy='impcont', logTransform=T, colorBy='FS_group')
+
 getSelectField <- function(fDesc, choices, defaultVal=NA) {
   selectInput(
     inputId = fDesc[['var']],
@@ -19,8 +27,13 @@ getSelectFields <- function(fieldDescs, choices, defaults) {
               #selectInput(inputId='id',label='label',choices=c('choice1','choice2'))
               )
 }
+curVal <- function(default, input) ifelse(is.na(input), default, input)
 
-
+getDimAssignments <- function(dispFields, defaults, input) {
+  dims <- dispFields
+  dims$val <- curVal(defaults[[dims$var]], input[[dims$var]])
+  return(dims)
+}
 test_app <- function(df, logTransform=F, ...) {
   require(shiny)
   
@@ -58,7 +71,7 @@ test_app <- function(df, logTransform=F, ...) {
         h4('defaults'),
         tableOutput("defaults"),
         h4('inames'),
-        tableOutput("inames"),
+        verbatimTextOutput("inames"),
         
         h3(textOutput("facetRowsBy", container = span)),
         
@@ -79,7 +92,7 @@ test_app <- function(df, logTransform=F, ...) {
     output$dimAssignments <- renderTable(dimFields)
     output$defaults <- renderTable(defaults)
     #reac <- reactiveValues()
-    output$inames <- renderTable(reactive({reactiveValuesToList(input)}))
+    output$inames <- reactive({(getDimAssignments(dimFields, defaults, input))})
     #print(output$inames)
     #output$input <- reactive(renderTable(reac))
     
