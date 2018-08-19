@@ -11,7 +11,16 @@
 #     ...
 # // install_local stopped working for me for some reason unless I gave full path:
 # install_local('/Users/sigfried/sesync/tbl.viz.explorer', lib=tbl.viz.explorer)
-library(tbl.viz.explorer)
+
+
+
+
+
+#library(tbl.viz.explorer)
+
+
+
+
 # to test:
 #  > tbl.viz.explorer::hello()
 #    [1] "Hello, world!"
@@ -40,6 +49,11 @@ agg$expcont <- countrycode(agg$Exporter.Code, origin = "iso3n", destination = "c
 
 agg <- select(agg, year, FS_group, Agg.Weight, Agg.Value, exp, expcont, imp, impcont)
 
+tbl.viz.explorer::runApp(
+  df=agg, logTransform=T,
+  x="year", y="Agg.Weight", facetRowsBy='expcont', facetColsBy='impcont', colorBy='FS_group')
+
+print('why not running?')
 
 
 #test_app(df=agg, x="year", y="Agg.Weight",
