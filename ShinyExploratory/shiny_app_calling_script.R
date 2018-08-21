@@ -24,12 +24,15 @@
 # to test:
 #  > tbl.viz.explorer::hello()
 #    [1] "Hello, world!"
-
+library(packrat)
 library(tidyr)
 library(dplyr)
 library(ggplot2)
 library(fishRmap)
 library(countrycode)
+install_local('tbl.viz.explorer',  repos = '/Users/sigfried/sesync')
+
+
 agg <- read.csv("./Data/species_CT_agg_clean_13Oct17.csv")
 
 agg$imp <- countrycode(agg$Importer.Code, origin = "iso3n", destination = "iso.name.en")
